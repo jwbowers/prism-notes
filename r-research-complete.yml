@@ -1,0 +1,1029 @@
+name: "R Research Complete"
+slug: "r-research-complete"
+description: "Complete R research environment: RStudio Server, Neovim/AstroNvim, Quarto, LaTeX, Python/Jupyter, publishing tools, and full data science toolkit"
+long_description: |
+  All-in-one R research environment combining every capability from
+  r-research-full-stack and r-publishing-stack into a single template.
+
+  Includes:
+  - R 4.5+ with tidyverse and extended data wrangling packages
+  - RStudio Server 2026.01 (web-based IDE on port 8787)
+  - Neovim with AstroNvim, R.nvim, treesitter, and LSP support
+  - Quarto for scientific publishing
+  - Full TeX Live 2024 for PDF generation
+  - Publishing packages: bookdown, blogdown, xaringan, gt, gtsummary
+  - Python 3.12 with Jupyter Lab
+  - Database clients (PostgreSQL, MySQL, SQLite)
+  - Web scraping tools (httr, xml2, rvest)
+  - Git with LFS for large files
+
+  Perfect for:
+  - Publishing research papers and books
+  - Mixed R/Python data science workflows
+  - Interactive web apps (Shiny, Plotly)
+  - Collaborative analysis with web-based access
+  - Teaching data science
+
+author: "Prism Team"
+version: "1.0.0"
+base: "ubuntu-24.04"
+
+# Connection type
+connection_type: "ssh"
+
+# Complexity and categorization
+complexity: "complex"
+category: "Research Tools"
+domain: "research"
+
+# Visual presentation
+icon: "📖"
+color: "#276DC3"
+popular: true
+
+# Architecture
+architecture: "x86_64"
+
+# Use APT package manager for system packages
+package_manager: "apt"
+
+# Inherit from Ubuntu 24.04 base
+inherits: ["Ubuntu 24.04 LTS (x86_64)"]
+
+# Template parameters for customization
+parameters:
+  # RStudio Server version
+  rstudio_version:
+    name: "rstudio_version"
+    display_name: "RStudio Server Version"
+    description: "RStudio Server version to install"
+    type: "choice"
+    choices: ["latest", "2026.01.1-403", "2026.01.0-392", "2024.12.1-542", "2024.09.1-394"]
+    default: "latest"
+    group: "Development Environment"
+    order: 1
+    impact: "Version affects available features and compatibility"
+
+  # Neovim + AstroNvim
+  install_neovim:
+    name: "install_neovim"
+    display_name: "Install Neovim + AstroNvim"
+    description: "Install Neovim with AstroNvim configuration, R.nvim, treesitter, and LSP support"
+    type: "bool"
+    default: true
+    group: "Development Environment"
+    order: 2
+
+  neovim_config_repo:
+    name: "neovim_config_repo"
+    display_name: "Neovim Config Repository"
+    description: "Git URL for custom Neovim config (leave empty for built-in AstroNvim + R.nvim setup)"
+    type: "string"
+    default: ""
+    group: "Development Environment"
+    order: 3
+    conditional: "{{.install_neovim}}"
+
+  # Researcher identity (for git commits)
+  primary_user_name:
+    name: "primary_user_name"
+    display_name: "Your Full Name"
+    description: "Name for git commits (e.g. Jake Bowers)"
+    type: "string"
+    default: ""
+    group: "Collaboration"
+    order: 28
+
+  primary_user_email:
+    name: "primary_user_email"
+    display_name: "Your Email"
+    description: "Email for git commits (e.g. jwbowers@illinois.edu)"
+    type: "string"
+    default: ""
+    group: "Collaboration"
+    order: 29
+
+  # GitHub collaboration
+  github_repo_url:
+    name: "github_repo_url"
+    display_name: "GitHub Repository SSH URL"
+    description: "SSH URL of the GitHub repo to clone for all users (e.g. git@github.com:org/repo.git). Leave empty to skip."
+    type: "string"
+    default: ""
+    group: "Collaboration"
+    order: 30
+
+  # R package plugins
+  install_languageserver:
+    name: "install_languageserver"
+    display_name: "Install Language Server"
+    description: "Install R languageserver package for LSP support in editors"
+    type: "bool"
+    default: true
+    group: "R Packages"
+    order: 10
+
+  languageserver_version:
+    name: "languageserver_version"
+    display_name: "Language Server Version"
+    description: "Version of languageserver package"
+    type: "choice"
+    choices: ["latest", "0.3.16", "0.3.15"]
+    default: "latest"
+    group: "R Packages"
+    order: 11
+    conditional: "{{.install_languageserver}}"
+
+  install_renv:
+    name: "install_renv"
+    display_name: "Install renv"
+    description: "Install renv package for reproducible R environments"
+    type: "bool"
+    default: true
+    group: "R Packages"
+    order: 20
+
+  renv_version:
+    name: "renv_version"
+    display_name: "renv Version"
+    description: "Version of renv package"
+    type: "choice"
+    choices: ["latest", "1.0.7", "1.0.3"]
+    default: "latest"
+    group: "R Packages"
+    order: 21
+    conditional: "{{.install_renv}}"
+
+# System and application packages
+packages:
+  # Core system tools
+  system:
+    - "build-essential"
+    - "software-properties-common"
+    - "apt-transport-https"
+    - "ca-certificates"
+    - "gnupg"
+    - "lsb-release"
+    - "dirmngr"
+
+  # R dependencies
+  r_dependencies:
+    - "gfortran"
+    - "libcurl4-openssl-dev"
+    - "libssl-dev"
+    - "libxml2-dev"
+    - "libfontconfig1-dev"
+    - "libharfbuzz-dev"
+    - "libfribidi-dev"
+    - "libfreetype6-dev"
+    - "libpng-dev"
+    - "libtiff5-dev"
+    - "libjpeg-dev"
+    - "libgit2-dev"
+
+  # LaTeX and document tools
+  latex:
+    - "texlive-full"
+    - "texlive-xetex"
+    - "texlive-fonts-extra"
+    - "pandoc"
+    - "ghostscript"
+    - "pdftk-java"
+    - "imagemagick"
+
+  # Database clients
+  databases:
+    - "postgresql-client"
+    - "mysql-client"
+    - "sqlite3"
+
+  # Data processing tools
+  data_tools:
+    - "csvkit"
+    - "jq"
+    - "xmlstarlet"
+
+  # Terminal and session management
+  terminal:
+    - "tmux"
+    - "screen"
+    - "htop"
+    - "tree"
+    - "ncdu"
+
+  # Text editors
+  editors:
+    - "vim"
+    - "nano"
+    - "emacs-nox"
+
+  # Neovim dependencies (neovim itself installed from GitHub releases in post_install)
+  neovim_deps:
+    - "ripgrep"
+    - "fd-find"
+    - "nodejs"
+    - "npm"
+    - "xclip"
+
+  # Compression tools
+  compression:
+    - "zip"
+    - "unzip"
+    - "bzip2"
+    - "p7zip-full"
+
+  # File transfer
+  transfer:
+    - "rsync"
+    - "wget"
+    - "curl"
+
+  # Python for mixed workflows
+  python:
+    - "python3.12"
+    - "python3.12-dev"
+    - "python3.12-venv"
+    - "python3-pip"
+    - "python3-numpy"
+    - "python3-pandas"
+    - "python3-matplotlib"
+    - "python3-seaborn"
+    - "python3-sklearn"
+    - "python3-scipy"
+
+# Users
+users:
+  - name: "jwbowers"
+    groups: ["sudo"]
+    shell: "/bin/bash"
+
+# Services
+services:
+  - name: "rstudio-server"
+    port: 8787
+    type: "web"
+    description: "RStudio Server (web-based R IDE)"
+    start_command: "sudo systemctl start rstudio-server"
+    check_command: "systemctl is-active rstudio-server"
+
+  - name: "jupyter"
+    port: 8888
+    type: "web"
+    description: "Jupyter Notebook Server"
+    start_command: "jupyter lab --ip=0.0.0.0 --no-browser"
+    check_command: "pgrep -f jupyter-lab"
+
+# Ports to open
+ports:
+  - 22    # SSH
+  - 8787  # RStudio Server
+  - 8888  # Jupyter
+
+# Post-installation script
+post_install: |
+  #!/bin/bash
+  set -e
+
+  # Prevent interactive prompts (required for texlive, grub, etc.)
+  export DEBIAN_FRONTEND=noninteractive
+  export NEEDRESTART_MODE=a
+
+  echo "Starting R Research Complete configuration..."
+
+  # Update system
+  echo "Updating system packages..."
+  apt-get update && apt-get upgrade -y
+
+  # Install R 4.4.2
+  echo "Installing R 4.4.2..."
+  wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
+  add-apt-repository -y "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
+  apt-get update
+  apt-get install -y r-base r-base-dev
+
+  # Verify R version
+  R_VERSION=$(R --version | head -n1)
+  echo "R installed: $R_VERSION"
+
+  # Install RStudio Server
+  echo "Installing RStudio Server..."
+  apt-get install -y gdebi-core
+  if [ "{{.rstudio_version}}" = "latest" ]; then
+    # Use latest available version (2026.01.1-403 as of February 2026)
+    # Posit provides jammy (Ubuntu 22.04) debs for Ubuntu 24.04 via glibc compatibility
+    RSTUDIO_VERSION="2026.01.1-403"
+  else
+    RSTUDIO_VERSION="{{.rstudio_version}}"
+  fi
+  wget https://download2.rstudio.org/server/jammy/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb
+  gdebi -n rstudio-server-${RSTUDIO_VERSION}-amd64.deb
+  rm rstudio-server-${RSTUDIO_VERSION}-amd64.deb
+
+  # Enable and start RStudio Server
+  systemctl enable rstudio-server
+  systemctl start rstudio-server
+  echo "RStudio Server installed and started (port 8787)"
+
+  # Install Quarto 1.6.33
+  echo "Installing Quarto..."
+  wget https://github.com/quarto-dev/quarto-cli/releases/download/v1.6.33/quarto-1.6.33-linux-amd64.deb
+  apt-get install -y ./quarto-1.6.33-linux-amd64.deb
+  rm quarto-1.6.33-linux-amd64.deb
+  echo "Quarto installed"
+
+  # Install R packages using Posit Package Manager (pre-built binaries for Ubuntu 24.04)
+  # Combines core data science packages from full-stack + publishing packages from publishing-stack
+  echo "Installing R packages via Posit Package Manager..."
+  Rscript -e "
+  options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/noble/latest'))
+  install.packages(c(
+    # Core tidyverse and data wrangling
+    'tidyverse',     # ggplot2, dplyr, tidyr, readr, purrr, stringr, forcats, tibble
+    'lubridate',     # Date/time handling
+    'glue',          # String interpolation
+    'jsonlite',      # JSON handling
+    'here',          # Project-relative paths
+
+    # Dynamic documents and literate programming
+    'rmarkdown',     # Dynamic documents
+    'knitr',         # Literate programming
+
+    # Publishing and presentation
+    'bookdown',      # Books and long documents
+    'blogdown',      # Websites and blogs
+    'xaringan',      # Presentations
+    'gt',            # Publication-quality tables
+    'gtsummary',     # Summary tables
+
+    # Web scraping and HTTP
+    'httr',          # HTTP requests
+    'xml2',          # XML parsing
+    'rvest',         # Web scraping
+
+    # Database interfaces
+    'DBI',           # Database interface
+    'RSQLite',       # SQLite support
+    'RPostgres',     # PostgreSQL support
+    'RMySQL',        # MySQL support
+
+    # Interactive output
+    'shiny',         # Interactive web apps
+    'plotly',        # Interactive plots
+
+    # Development tools
+    'devtools',      # Package development
+    'reticulate'     # Python integration
+  ))
+  cat('\nR packages installed\n')
+  "
+  echo "Additional packages can be installed via RStudio as needed"
+
+  # Python data science packages already installed via apt in packages: section above (numpy, pandas, etc.)
+  # Install JupyterLab in a venv with --system-site-packages so it sees apt-installed numpy/pandas/etc.
+  # This avoids pip/apt conflicts (Ubuntu 24.04 PEP 668 + traitlets RECORD issue)
+  echo "Installing JupyterLab in isolated venv..."
+  python3 -m venv --system-site-packages /opt/jupyterlab
+  /opt/jupyterlab/bin/pip install --quiet jupyterlab
+  ln -sf /opt/jupyterlab/bin/jupyter /usr/local/bin/jupyter
+  ln -sf /opt/jupyterlab/bin/jupyter-lab /usr/local/bin/jupyter-lab
+  echo "JupyterLab installed (jupyter command available system-wide)"
+
+  # Install Git LFS
+  echo "Installing Git LFS..."
+  curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
+  apt-get install -y git-lfs
+  git lfs install --system
+  echo "Git LFS installed"
+
+  # Install Neovim + AstroNvim
+  {{if .install_neovim}}
+  echo "Installing Neovim (latest stable)..."
+  curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
+  tar -C /opt -xzf nvim-linux-x86_64.tar.gz
+  rm nvim-linux-x86_64.tar.gz
+  ln -sf /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim
+  echo "Neovim $(nvim --version | head -n1) installed"
+
+  NVIM_CONFIG="/home/jwbowers/.config/nvim"
+  mkdir -p "$NVIM_CONFIG"
+
+  {{if ne .neovim_config_repo ""}}
+  # Clone user's custom neovim configuration
+  echo "Cloning custom Neovim config from {{.neovim_config_repo}}..."
+  git clone "{{.neovim_config_repo}}" "$NVIM_CONFIG"
+  {{else}}
+  # Set up AstroNvim with R research configuration
+  echo "Setting up AstroNvim with R research plugins..."
+
+  # Clone AstroNvim starter template
+  git clone --depth 1 https://github.com/AstroNvim/template "$NVIM_CONFIG"
+  rm -rf "$NVIM_CONFIG/.git"
+
+  # init.lua - lazy.nvim bootstrap
+  cat > "$NVIM_CONFIG/init.lua" <<'NVIM_INIT'
+  local lazypath = vim.env.LAZY or vim.fn.stdpath "data" .. "/lazy/lazy.nvim"
+  if not (vim.env.LAZY or (vim.uv or vim.loop).fs_stat(lazypath)) then
+    local result = vim.fn.system({ "git", "clone", "--filter=blob:none", "https://github.com/folke/lazy.nvim.git", "--branch=stable", lazypath })
+    if vim.v.shell_error ~= 0 then
+      vim.api.nvim_echo({ { ("Error cloning lazy.nvim:\n%s\n"):format(result), "ErrorMsg" }, { "Press any key to exit...", "MoreMsg" } }, true, {})
+      vim.fn.getchar()
+      vim.cmd.quit()
+    end
+  end
+  vim.opt.rtp:prepend(lazypath)
+  if not pcall(require, "lazy") then
+    vim.api.nvim_echo({ { ("Unable to load lazy from: %s\n"):format(lazypath), "ErrorMsg" }, { "Press any key to exit...", "MoreMsg" } }, true, {})
+    vim.fn.getchar()
+    vim.cmd.quit()
+  end
+  require "lazy_setup"
+  require "polish"
+  NVIM_INIT
+
+  # lazy_setup.lua - plugin spec loading
+  cat > "$NVIM_CONFIG/lua/lazy_setup.lua" <<'NVIM_LAZY'
+  require("lazy").setup({
+    {
+      "AstroNvim/AstroNvim",
+      import = "astronvim.plugins",
+      opts = {
+        mapleader = " ",
+        maplocalleader = "\\",
+        icons_enabled = true,
+        pin_plugins = nil,
+        update_notifications = true,
+      },
+    },
+    { import = "community" },
+    { import = "plugins" },
+  }, {
+    install = { colorscheme = { "astrotheme" } },
+    ui = { backdrop = 100 },
+    performance = {
+      rtp = {
+        disabled_plugins = {
+          "gzip", "netrwPlugin", "tarPlugin", "tohtml", "zipPlugin",
+        },
+      },
+    },
+  })
+  NVIM_LAZY
+
+  # community.lua - AstroCommunity packs and colorschemes
+  cat > "$NVIM_CONFIG/lua/community.lua" <<'NVIM_COMMUNITY'
+  return {
+    "AstroNvim/astrocommunity",
+    { import = "astrocommunity.pack.lua" },
+    { import = "astrocommunity.colorscheme.catppuccin" },
+    { import = "astrocommunity.colorscheme.solarized-osaka-nvim" },
+    { import = "astrocommunity.colorscheme.monokai-pro-nvim" },
+  }
+  NVIM_COMMUNITY
+
+  mkdir -p "$NVIM_CONFIG/lua/plugins"
+
+  # plugins/r-nvim.lua - R.nvim with neotest-testthat
+  cat > "$NVIM_CONFIG/lua/plugins/r-nvim.lua" <<'NVIM_RNVIM'
+  return {
+    {
+      "R-nvim/R.nvim",
+      branch = "main",
+      lazy = false,
+      opts = {
+        pdfviewer = "",
+      },
+      config = function(_, opts)
+        vim.g.rout_follow_colorscheme = true
+        require("r").setup(opts)
+        require("r.pdf.generic").open = vim.ui.open
+      end,
+    },
+    {
+      "nvim-neotest/neotest",
+      optional = true,
+      dependencies = {
+        "shunsambongi/neotest-testthat",
+        "nvim-neotest/nvim-nio",
+        "nvim-lua/plenary.nvim",
+        "antoinemadec/FixCursorHold.nvim",
+        "nvim-treesitter/nvim-treesitter",
+      },
+    },
+    { "shunsambongi/neotest-testthat" },
+  }
+  NVIM_RNVIM
+
+  # plugins/treesitter.lua - parsers for R, LaTeX, markdown, etc.
+  cat > "$NVIM_CONFIG/lua/plugins/treesitter.lua" <<'NVIM_TS'
+  return {
+    "nvim-treesitter/nvim-treesitter",
+    run = ":TSUpdate",
+    opts = {
+      ensure_installed = {
+        "lua", "vim", "markdown", "markdown_inline",
+        "r", "rnoweb", "yaml", "latex", "csv",
+      },
+    },
+  }
+  NVIM_TS
+
+  # plugins/mason.lua - LSP servers and tools
+  cat > "$NVIM_CONFIG/lua/plugins/mason.lua" <<'NVIM_MASON'
+  return {
+    {
+      "WhoIsSethDaniel/mason-tool-installer.nvim",
+      opts = {
+        ensure_installed = {
+          "lua-language-server",
+          "stylua",
+          "debugpy",
+          "tree-sitter-cli",
+        },
+      },
+    },
+  }
+  NVIM_MASON
+
+  # plugins/astrocore.lua - core options (no relative numbers, wrap on)
+  cat > "$NVIM_CONFIG/lua/plugins/astrocore.lua" <<'NVIM_CORE'
+  return {
+    "AstroNvim/astrocore",
+    opts = {
+      features = {
+        large_buf = { size = 1024 * 256, lines = 10000 },
+        autopairs = true,
+        cmp = true,
+        diagnostics = { virtual_text = true, virtual_lines = false },
+        highlighturl = true,
+        notifications = true,
+      },
+      diagnostics = {
+        virtual_text = true,
+        underline = true,
+      },
+      options = {
+        opt = {
+          relativenumber = false,
+          number = true,
+          spell = false,
+          signcolumn = "yes",
+          wrap = true,
+        },
+      },
+      mappings = {
+        n = {
+          ["]b"] = { function() require("astrocore.buffer").nav(vim.v.count1) end, desc = "Next buffer" },
+          ["[b"] = { function() require("astrocore.buffer").nav(-vim.v.count1) end, desc = "Previous buffer" },
+          ["<Leader>bd"] = {
+            function()
+              require("astroui.status.heirline").buffer_picker(
+                function(bufnr) require("astrocore.buffer").close(bufnr) end
+              )
+            end,
+            desc = "Close buffer from tabline",
+          },
+          ["c"] = false,
+        },
+      },
+    },
+  }
+  NVIM_CORE
+
+  # plugins/astroui.lua - UI config with astrodark colorscheme
+  cat > "$NVIM_CONFIG/lua/plugins/astroui.lua" <<'NVIM_UI'
+  return {
+    "AstroNvim/astroui",
+    opts = {
+      colorscheme = "astrodark",
+    },
+  }
+  NVIM_UI
+
+  # plugins/astrolsp.lua - LSP configuration
+  cat > "$NVIM_CONFIG/lua/plugins/astrolsp.lua" <<'NVIM_LSP'
+  return {
+    "AstroNvim/astrolsp",
+    opts = {
+      features = {
+        codelens = true,
+        inlay_hints = false,
+        semantic_tokens = true,
+      },
+      formatting = {
+        format_on_save = { enabled = true },
+        timeout_ms = 1000,
+      },
+    },
+  }
+  NVIM_LSP
+
+  # plugins/none-ls.lua - diagnostics (write-good)
+  cat > "$NVIM_CONFIG/lua/plugins/none-ls.lua" <<'NVIM_NLS'
+  return {
+    "nvimtools/none-ls.nvim",
+    opts = function(_, opts)
+      local null_ls = require "null-ls"
+      opts.sources = require("astrocore").list_insert_unique(opts.sources, {})
+      table.insert(opts.sources, null_ls.builtins.diagnostics.write_good)
+      return opts
+    end,
+  }
+  NVIM_NLS
+
+  # plugins/user.lua - snacks.nvim dashboard, lsp_signature, autopairs
+  cat > "$NVIM_CONFIG/lua/plugins/user.lua" <<'NVIM_USER'
+  return {
+    {
+      "ray-x/lsp_signature.nvim",
+      event = "BufRead",
+      config = function() require("lsp_signature").setup() end,
+    },
+    {
+      "folke/snacks.nvim",
+      priority = 1000,
+      opts = {
+        bigfile = { enabled = true },
+        explorer = { enabled = true },
+        indent = { enabled = true },
+        input = { enabled = true },
+        picker = { enabled = true },
+        notifier = { enabled = true },
+        quickfile = { enabled = true },
+        scope = { enabled = true },
+        scroll = { enabled = true },
+        statuscolumn = { enabled = true },
+        words = { enabled = true },
+        dashboard = { enabled = true },
+      },
+    },
+    { "max397574/better-escape.nvim", enabled = false },
+    {
+      "L3MON4D3/LuaSnip",
+      config = function(plugin, opts)
+        require "astronvim.plugins.configs.luasnip"(plugin, opts)
+        local luasnip = require "luasnip"
+        luasnip.filetype_extend("javascript", { "javascriptreact" })
+      end,
+    },
+    {
+      "windwp/nvim-autopairs",
+      config = function(plugin, opts)
+        require "astronvim.plugins.configs.nvim-autopairs"(plugin, opts)
+        local npairs = require "nvim-autopairs"
+        local Rule = require "nvim-autopairs.rule"
+        local cond = require "nvim-autopairs.conds"
+        npairs.add_rules({
+          Rule("$", "$", { "tex", "latex" })
+            :with_pair(cond.not_after_regex "%%")
+            :with_pair(cond.not_before_regex("xxx", 3))
+            :with_move(cond.none())
+            :with_del(cond.not_after_regex "xx")
+            :with_cr(cond.none()),
+          Rule("a", "a", "-vim"),
+        })
+      end,
+    },
+  }
+  NVIM_USER
+
+  # polish.lua (empty placeholder)
+  cat > "$NVIM_CONFIG/lua/polish.lua" <<'NVIM_POLISH'
+  if true then return end
+  NVIM_POLISH
+
+  {{end}}
+
+  # Set ownership for neovim config
+  chown -R jwbowers:jwbowers /home/jwbowers/.config
+  mkdir -p /home/jwbowers/.local/share/nvim
+  chown -R jwbowers:jwbowers /home/jwbowers/.local
+
+  # Bootstrap Neovim plugins (headless install)
+  echo "Installing Neovim plugins (this may take a minute)..."
+  su - jwbowers -c 'nvim --headless "+Lazy! sync" +qa 2>/dev/null' || true
+  echo "Neovim + AstroNvim setup complete"
+  {{end}}
+
+  # Configure RStudio Server for better performance
+  echo "Configuring RStudio Server..."
+  mkdir -p /etc/rstudio
+  cat > /etc/rstudio/rserver.conf <<'RSTUDIO_CONF'
+  # RStudio Server Configuration
+  www-address=0.0.0.0
+  www-port=8787
+  rsession-which-r=/usr/bin/R
+  auth-required-user-group=sudo
+  RSTUDIO_CONF
+
+  # Restart RStudio Server with new configuration
+  systemctl restart rstudio-server
+
+  # Set password for jwbowers user (required for RStudio Server PAM authentication)
+  # SSH key auth handles terminal access, but RStudio Server needs a system password
+  RESEARCHER_PASSWORD=$(openssl rand -base64 12)
+  echo "jwbowers:${RESEARCHER_PASSWORD}" | chpasswd
+  echo ""
+  echo "============================================="
+  echo "  RStudio Server Login Credentials"
+  echo "  Username: jwbowers"
+  echo "  Password: ${RESEARCHER_PASSWORD}"
+  echo "============================================="
+  echo ""
+
+  # Create jwbowers user home directory structure
+  mkdir -p /home/jwbowers/{projects,data,notebooks,documents,scripts}
+  chown -R jwbowers:jwbowers /home/jwbowers
+
+  # Create welcome message
+  echo "Creating welcome message..."
+  cat > /home/jwbowers/WELCOME.txt <<'WELCOME_END'
+  R Research Complete Environment
+
+  =============================================
+  POST-INSTALL CHECKLIST (do these first)
+  =============================================
+
+  1. Add the deploy key to GitHub (enables git for all users):
+       cat ~/.ssh/github_deploy_key.pub
+     Copy the output, then go to:
+       GitHub repo > Settings > Deploy keys > Add deploy key
+     Check "Allow write access", click Add key.
+
+  2. Clone your repository:
+       git clone git@github.com:your-org/your-repo.git ~/projects/your-repo
+
+  3. Store the repo URL (so add-collaborator clones it automatically):
+       echo "git@github.com:your-org/your-repo.git" | sudo tee /etc/prism/github_repo_url
+
+  4. Add collaborators:
+       sudo add-collaborator jsmith "Jane Smith" jane@university.edu
+     Send them the printed credentials. They open RStudio, log in,
+     and use the Git tab to pull/commit/push.
+
+  =============================================
+
+  Access Points:
+    RStudio Server: http://YOUR_IP:8787
+      Login: username "jwbowers", password from provisioning log
+      To reset: sudo passwd jwbowers
+    Jupyter Lab: jupyter lab --ip=0.0.0.0 --no-browser
+                 then http://YOUR_IP:8888
+
+  Neovim:
+    nvim my_analysis.R      Open a file
+    \rf                     Start R console
+    \l                      Send current line to R
+    \ss                     Send visual selection to R
+    \rq                     Quit R
+    Space                   AstroNvim commands (file finder, etc.)
+    Note: Use a Nerd Font in your local terminal for icons
+
+  Installed Software:
+    R 4.4+, RStudio Server, Neovim + AstroNvim + R.nvim,
+    Quarto, TeX Live 2024, Python 3.12, Jupyter Lab, Git + LFS
+
+  R Packages:
+    tidyverse, lubridate, glue, jsonlite, here,
+    bookdown, blogdown, xaringan, gt, gtsummary, rmarkdown, knitr,
+    httr, xml2, rvest, shiny, plotly,
+    DBI, RSQLite, RPostgres, RMySQL, devtools, reticulate
+
+  Directories:
+    ~/projects/   Research projects
+    ~/data/       Data files
+    ~/notebooks/  Jupyter notebooks
+    ~/documents/  Quarto/RMarkdown documents
+    ~/scripts/    R and Python scripts
+  WELCOME_END
+
+  chown jwbowers:jwbowers /home/jwbowers/WELCOME.txt
+
+  # Install R package plugins
+  echo "Installing R package plugins..."
+  {{if .install_languageserver}}
+  echo "  Installing languageserver package..."
+  if [ "{{.languageserver_version}}" = "latest" ]; then
+    R -e "install.packages('languageserver', repos='https://cloud.r-project.org')"
+  else
+    R -e "if (!requireNamespace('remotes', quietly = TRUE)) install.packages('remotes', repos='https://cloud.r-project.org'); remotes::install_version('languageserver', version='{{.languageserver_version}}', repos='https://cloud.r-project.org')"
+  fi
+  echo "  languageserver installed"
+  {{end}}
+
+  {{if .install_renv}}
+  echo "  Installing renv package..."
+  if [ "{{.renv_version}}" = "latest" ]; then
+    R -e "install.packages('renv', repos='https://cloud.r-project.org')"
+  else
+    R -e "if (!requireNamespace('remotes', quietly = TRUE)) install.packages('remotes', repos='https://cloud.r-project.org'); remotes::install_version('renv', version='{{.renv_version}}', repos='https://cloud.r-project.org')"
+  fi
+  echo "  renv installed"
+  {{end}}
+
+  echo "R package plugins installation complete"
+
+  # GitHub deploy key and collaborator management
+  echo "Setting up GitHub deploy key..."
+  mkdir -p /etc/prism
+  ssh-keygen -t ed25519 -f /etc/prism/github_deploy_key -N "" -C "prism-$(hostname)-deploy-key"
+  chmod 640 /etc/prism/github_deploy_key
+  chgrp sudo /etc/prism/github_deploy_key
+
+  {{if ne .github_repo_url ""}}
+  echo "{{.github_repo_url}}" > /etc/prism/github_repo_url
+  {{end}}
+
+  # Configure jwbowers user's SSH for GitHub
+  mkdir -p /home/jwbowers/.ssh
+  cp /etc/prism/github_deploy_key /home/jwbowers/.ssh/github_deploy_key
+  chmod 600 /home/jwbowers/.ssh/github_deploy_key
+  cat > /home/jwbowers/.ssh/config <<'SSHCONFIG'
+  Host github.com
+      IdentityFile ~/.ssh/github_deploy_key
+      StrictHostKeyChecking accept-new
+  SSHCONFIG
+  chmod 600 /home/jwbowers/.ssh/config
+  chown -R jwbowers:jwbowers /home/jwbowers/.ssh
+
+  # Configure git identity for jwbowers user
+  {{if ne .primary_user_name ""}}
+  su - jwbowers -c "git config --global user.name '{{.primary_user_name}}'"
+  {{end}}
+  {{if ne .primary_user_email ""}}
+  su - jwbowers -c "git config --global user.email '{{.primary_user_email}}'"
+  {{end}}
+
+  {{if ne .github_repo_url ""}}
+  # Clone the repository for the jwbowers user
+  REPO_NAME=$(basename "{{.github_repo_url}}" .git)
+  echo "Cloning {{.github_repo_url}}..."
+  su - jwbowers -c "git clone '{{.github_repo_url}}' ~/projects/${REPO_NAME}" || echo "  Clone skipped - add deploy key to GitHub first, then: git clone {{.github_repo_url}} ~/projects/${REPO_NAME}"
+  {{end}}
+
+  # Install add-collaborator helper script
+  cat > /usr/local/bin/add-collaborator <<'ADDCOLLAB'
+  #!/bin/bash
+  # Add a collaborator to this research instance
+  # Sets up: user account, RStudio password, git identity, GitHub SSH key, repo clone
+  #
+  # Usage: sudo add-collaborator <username> "<Full Name>" <email@example.com>
+
+  set -e
+
+  if [ $# -lt 3 ]; then
+      echo "Usage: sudo add-collaborator <username> \"<Full Name>\" <email@example.com>"
+      echo ""
+      echo "Example:"
+      echo "  sudo add-collaborator jsmith \"Jane Smith\" jane.smith@university.edu"
+      echo ""
+      echo "This will:"
+      echo "  1. Create a Linux user account with RStudio Server access"
+      echo "  2. Set git user.name and user.email for their commits"
+      echo "  3. Configure SSH for GitHub (using the instance deploy key)"
+      echo "  4. Clone the project repository into their ~/projects/ directory"
+      exit 1
+  fi
+
+  USERNAME="$1"
+  FULLNAME="$2"
+  EMAIL="$3"
+
+  # Create user account
+  echo "Creating user: ${USERNAME}..."
+  useradd -m -s /bin/bash -G sudo "${USERNAME}" 2>/dev/null || true
+
+  # Set password (required for RStudio Server PAM authentication)
+  PASSWORD=$(openssl rand -base64 12)
+  echo "${USERNAME}:${PASSWORD}" | chpasswd
+
+  # Configure git identity
+  su - "${USERNAME}" -c "git config --global user.name '${FULLNAME}'"
+  su - "${USERNAME}" -c "git config --global user.email '${EMAIL}'"
+
+  # Set up SSH key for GitHub (using instance deploy key)
+  DEPLOY_KEY="/etc/prism/github_deploy_key"
+  if [ -f "${DEPLOY_KEY}" ]; then
+      mkdir -p "/home/${USERNAME}/.ssh"
+      cp "${DEPLOY_KEY}" "/home/${USERNAME}/.ssh/github_deploy_key"
+      chmod 600 "/home/${USERNAME}/.ssh/github_deploy_key"
+
+      cat > "/home/${USERNAME}/.ssh/config" <<SSHEOF
+  Host github.com
+      IdentityFile ~/.ssh/github_deploy_key
+      StrictHostKeyChecking accept-new
+  SSHEOF
+      chmod 600 "/home/${USERNAME}/.ssh/config"
+      chown -R "${USERNAME}:${USERNAME}" "/home/${USERNAME}/.ssh"
+
+      # Clone repo if configured
+      REPO_URL_FILE="/etc/prism/github_repo_url"
+      if [ -f "${REPO_URL_FILE}" ]; then
+          REPO_URL=$(cat "${REPO_URL_FILE}")
+          REPO_NAME=$(basename "${REPO_URL}" .git)
+          echo "Cloning ${REPO_URL}..."
+          su - "${USERNAME}" -c "git clone '${REPO_URL}' ~/projects/${REPO_NAME}" \
+              || echo "  Clone failed - is the deploy key added to GitHub?"
+      fi
+  else
+      echo "Warning: No deploy key found at ${DEPLOY_KEY}"
+      echo "  Run: sudo ssh-keygen -t ed25519 -f ${DEPLOY_KEY} -N ''"
+  fi
+
+  # Create standard directories
+  su - "${USERNAME}" -c "mkdir -p ~/projects ~/data ~/scripts"
+
+  # Show credentials
+  INSTANCE_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || hostname -I | awk '{print $1}')
+  echo ""
+  echo "============================================="
+  echo "  Collaborator Added"
+  echo "  Username: ${USERNAME}"
+  echo "  Password: ${PASSWORD}"
+  echo "  Name:     ${FULLNAME}"
+  echo "  Email:    ${EMAIL}"
+  echo ""
+  echo "  RStudio:  http://${INSTANCE_IP}:8787"
+  echo "============================================="
+  echo ""
+  echo "Share these credentials with ${FULLNAME}."
+  echo "They can change their password in the RStudio terminal: passwd"
+  ADDCOLLAB
+  chmod +x /usr/local/bin/add-collaborator
+  echo "Installed: add-collaborator helper (run 'sudo add-collaborator --help')"
+
+  # Display deploy key for admin
+  echo ""
+  echo "============================================="
+  echo "  GitHub Deploy Key"
+  echo "  Add this to your repository for git access:"
+  echo ""
+  echo "  1. Go to your GitHub repo > Settings > Deploy keys"
+  echo "  2. Click 'Add deploy key'"
+  echo "  3. Paste the key below"
+  echo "  4. Check 'Allow write access'"
+  echo ""
+  cat /etc/prism/github_deploy_key.pub
+  echo ""
+  echo "  Then add collaborators with:"
+  echo "    sudo add-collaborator jsmith \"Jane Smith\" jane@uni.edu"
+  echo "============================================="
+  echo ""
+
+  # Final cleanup
+  apt-get autoremove -y
+  apt-get clean
+
+  echo "R Research Complete installation complete!"
+  echo ""
+  INSTANCE_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || hostname -I | awk '{print $1}')
+  echo "RStudio Server: http://${INSTANCE_IP}:8787"
+  echo "Neovim: $(nvim --version 2>/dev/null | head -n1 || echo 'not installed')"
+  echo "Quarto: $(quarto --version)"
+  echo "LaTeX: Full TeX Live 2024"
+  echo "Jupyter Lab: Start with 'jupyter lab --ip=0.0.0.0 --no-browser'"
+  echo "Welcome guide: /home/jwbowers/WELCOME.txt"
+  echo ""
+
+# Idle detection configuration
+idle_detection:
+  enabled: true
+  idle_threshold_minutes: 30  # Longer threshold for research workloads
+  check_processes:
+    - "R"
+    - "rsession"
+    - "rstudio"
+    - "nvim"
+    - "python"
+    - "jupyter"
+
+# Instance defaults
+instance_defaults:
+  ports: [22, 8787, 8888]
+  root_volume_gb: 80  # Larger for LaTeX (texlive-full ~8 GB), R packages, and Python libs
+  instance_type_preference: ["m7i.xlarge", "m6i.xlarge", "m6a.xlarge", "m7i.2xlarge"]
+
+# Research user configuration
+research_users:
+  enabled: true
+  default_shell: "/bin/bash"
+  default_groups: ["sudo"]
+  ssh_key_required: false
+
+# Component versions (for reference)
+components:
+  r_version: "4.4.2"
+  rstudio_server_version: "2026.01.1-403"
+  neovim_version: "latest-stable"
+  astronvim_version: "latest"
+  quarto_version: "1.6.33"
+  python_version: "3.12"
+  texlive_version: "2024"
+
+# Tags for marketplace
+tags:
+  type: "research"
+  purpose: "data-science"
+  level: "advanced"
+  language: "r-python"
+  web_interface: "true"
+  collaborative: "true"

@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Sensitive files
+.env
+*.pem
+*.key
