@@ -51,6 +51,7 @@ a distinct git identity.
 ### Create user accounts
 
 ```bash
+prism user create jwbowers --full-name "Jake Bowers" --email "maria@university.edu"
 prism user create maria --full-name "Maria Garcia" --email "maria@university.edu"
 prism user create carlos --full-name "Carlos Silva" --email "carlos@university.edu"
 ```
