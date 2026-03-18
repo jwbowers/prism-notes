@@ -4,6 +4,17 @@ This guide covers how to set up a shared research workspace on Prism,
 invite collaborators, and manage costs through hibernation and idle
 policies.
 
+## Setup
+
+First we are using our own template that we are storing outside of the ~/.prism
+directory for ease in maintenance. So we need to have done this first and after
+doing `prism init`  and after pulling/updating the prism-notes directory from
+github.
+
+```bash
+ln -s ~/repos/prism-notes/r-research-complete.yml r-research-complete.yml
+```
+
 ## Launching a workspace
 
 ```bash
