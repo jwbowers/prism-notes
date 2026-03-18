@@ -182,10 +182,28 @@ packages:
     - "libgit2-dev"
 
   # LaTeX and document tools
+  # NOTE: texlive-full replaced with curated subset — the full meta-package
+  # downloads ~5 GB / ~4500 debs and routinely hits 503/timeouts on EC2
+  # regional mirrors. This subset covers everything needed for academic
+  # publishing with R/Quarto/biblatex/tikz/XeTeX plus Spanish language.
   latex:
-    - "texlive-full"
-    - "texlive-xetex"
-    - "texlive-fonts-extra"
+    - "texlive-latex-base"
+    - "texlive-latex-recommended"   # KOMA-Script (scrartcl), fontspec, unicode-math, microtype
+    - "texlive-latex-extra"         # algorithm2e, fvextra, authblk, wrapfig, tabu, threeparttable, pdflscape, etc.
+    - "texlive-fonts-recommended"   # lmodern, standard fonts
+    - "texlive-fonts-extra"         # extended font collection
+    - "texlive-science"             # algorithm2e, siunitx, math extras
+    - "texlive-xetex"              # XeTeX engine for unicode-math/fontspec
+    - "texlive-luatex"             # LuaTeX engine support
+    - "texlive-bibtex-extra"       # biblatex, biblatex-chicago, biber support files
+    - "texlive-publishers"         # publisher style files
+    - "texlive-pictures"           # TikZ, PGF, tikz-cd, pgfpages
+    - "texlive-plain-generic"      # generic macro packages
+    - "texlive-lang-spanish"       # Spanish language/hyphenation support
+    - "texlive-lang-english"       # English language support
+    - "biber"                      # biblatex backend processor
+    - "fonts-source-code-pro"      # Source Code Pro monospace font
+    - "lmodern"                    # Latin Modern fonts
     - "pandoc"
     - "ghostscript"
     - "pdftk-java"
