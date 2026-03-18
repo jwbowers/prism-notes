@@ -412,285 +412,37 @@ post_install: |
   echo "Cloning custom Neovim config from {{.neovim_config_repo}}..."
   git clone "{{.neovim_config_repo}}" "$NVIM_CONFIG"
   {{else}}
-  # Set up AstroNvim with R research configuration
-  echo "Setting up AstroNvim with R research plugins..."
-
-  # Clone AstroNvim starter template
+  # Set up AstroNvim starter template with R.nvim support
+  # To use your own full config, set the neovim_config_repo parameter instead.
+  echo "Setting up AstroNvim with R.nvim plugin..."
   git clone --depth 1 https://github.com/AstroNvim/template "$NVIM_CONFIG"
   rm -rf "$NVIM_CONFIG/.git"
 
-  # init.lua - lazy.nvim bootstrap
-  cat > "$NVIM_CONFIG/init.lua" <<'NVIM_INIT'
-  local lazypath = vim.env.LAZY or vim.fn.stdpath "data" .. "/lazy/lazy.nvim"
-  if not (vim.env.LAZY or (vim.uv or vim.loop).fs_stat(lazypath)) then
-    local result = vim.fn.system({ "git", "clone", "--filter=blob:none", "https://github.com/folke/lazy.nvim.git", "--branch=stable", lazypath })
-    if vim.v.shell_error ~= 0 then
-      vim.api.nvim_echo({ { ("Error cloning lazy.nvim:\n%s\n"):format(result), "ErrorMsg" }, { "Press any key to exit...", "MoreMsg" } }, true, {})
-      vim.fn.getchar()
-      vim.cmd.quit()
-    end
-  end
-  vim.opt.rtp:prepend(lazypath)
-  if not pcall(require, "lazy") then
-    vim.api.nvim_echo({ { ("Unable to load lazy from: %s\n"):format(lazypath), "ErrorMsg" }, { "Press any key to exit...", "MoreMsg" } }, true, {})
-    vim.fn.getchar()
-    vim.cmd.quit()
-  end
-  require "lazy_setup"
-  require "polish"
-  NVIM_INIT
-
-  # lazy_setup.lua - plugin spec loading
-  cat > "$NVIM_CONFIG/lua/lazy_setup.lua" <<'NVIM_LAZY'
-  require("lazy").setup({
-    {
-      "AstroNvim/AstroNvim",
-      import = "astronvim.plugins",
-      opts = {
-        mapleader = " ",
-        maplocalleader = "\\",
-        icons_enabled = true,
-        pin_plugins = nil,
-        update_notifications = true,
-      },
-    },
-    { import = "community" },
-    { import = "plugins" },
-  }, {
-    install = { colorscheme = { "astrotheme" } },
-    ui = { backdrop = 100 },
-    performance = {
-      rtp = {
-        disabled_plugins = {
-          "gzip", "netrwPlugin", "tarPlugin", "tohtml", "zipPlugin",
-        },
-      },
-    },
-  })
-  NVIM_LAZY
-
-  # community.lua - AstroCommunity packs and colorschemes
-  cat > "$NVIM_CONFIG/lua/community.lua" <<'NVIM_COMMUNITY'
-  return {
-    "AstroNvim/astrocommunity",
-    { import = "astrocommunity.pack.lua" },
-    { import = "astrocommunity.colorscheme.catppuccin" },
-    { import = "astrocommunity.colorscheme.solarized-osaka-nvim" },
-    { import = "astrocommunity.colorscheme.monokai-pro-nvim" },
-  }
-  NVIM_COMMUNITY
-
+  # Add R.nvim plugin for R development support
   mkdir -p "$NVIM_CONFIG/lua/plugins"
-
-  # plugins/r-nvim.lua - R.nvim with neotest-testthat
-  cat > "$NVIM_CONFIG/lua/plugins/r-nvim.lua" <<'NVIM_RNVIM'
+  cat > "$NVIM_CONFIG/lua/plugins/r-nvim.lua" <<'RNVIM'
   return {
     {
       "R-nvim/R.nvim",
-      branch = "main",
       lazy = false,
-      opts = {
-        pdfviewer = "",
-      },
+      opts = { pdfviewer = "" },
       config = function(_, opts)
         vim.g.rout_follow_colorscheme = true
         require("r").setup(opts)
-        require("r.pdf.generic").open = vim.ui.open
       end,
     },
-    {
-      "nvim-neotest/neotest",
-      optional = true,
-      dependencies = {
-        "shunsambongi/neotest-testthat",
-        "nvim-neotest/nvim-nio",
-        "nvim-lua/plenary.nvim",
-        "antoinemadec/FixCursorHold.nvim",
-        "nvim-treesitter/nvim-treesitter",
-      },
-    },
-    { "shunsambongi/neotest-testthat" },
   }
-  NVIM_RNVIM
+  RNVIM
 
-  # plugins/treesitter.lua - parsers for R, LaTeX, markdown, etc.
-  cat > "$NVIM_CONFIG/lua/plugins/treesitter.lua" <<'NVIM_TS'
+  # Add treesitter parsers for R, LaTeX, markdown
+  cat > "$NVIM_CONFIG/lua/plugins/treesitter.lua" <<'TREESITTER'
   return {
     "nvim-treesitter/nvim-treesitter",
-    run = ":TSUpdate",
     opts = {
-      ensure_installed = {
-        "lua", "vim", "markdown", "markdown_inline",
-        "r", "rnoweb", "yaml", "latex", "csv",
-      },
+      ensure_installed = { "r", "rnoweb", "lua", "vim", "markdown", "markdown_inline", "yaml", "latex", "csv" },
     },
   }
-  NVIM_TS
-
-  # plugins/mason.lua - LSP servers and tools
-  cat > "$NVIM_CONFIG/lua/plugins/mason.lua" <<'NVIM_MASON'
-  return {
-    {
-      "WhoIsSethDaniel/mason-tool-installer.nvim",
-      opts = {
-        ensure_installed = {
-          "lua-language-server",
-          "stylua",
-          "debugpy",
-          "tree-sitter-cli",
-        },
-      },
-    },
-  }
-  NVIM_MASON
-
-  # plugins/astrocore.lua - core options (no relative numbers, wrap on)
-  cat > "$NVIM_CONFIG/lua/plugins/astrocore.lua" <<'NVIM_CORE'
-  return {
-    "AstroNvim/astrocore",
-    opts = {
-      features = {
-        large_buf = { size = 1024 * 256, lines = 10000 },
-        autopairs = true,
-        cmp = true,
-        diagnostics = { virtual_text = true, virtual_lines = false },
-        highlighturl = true,
-        notifications = true,
-      },
-      diagnostics = {
-        virtual_text = true,
-        underline = true,
-      },
-      options = {
-        opt = {
-          relativenumber = false,
-          number = true,
-          spell = false,
-          signcolumn = "yes",
-          wrap = true,
-        },
-      },
-      mappings = {
-        n = {
-          ["]b"] = { function() require("astrocore.buffer").nav(vim.v.count1) end, desc = "Next buffer" },
-          ["[b"] = { function() require("astrocore.buffer").nav(-vim.v.count1) end, desc = "Previous buffer" },
-          ["<Leader>bd"] = {
-            function()
-              require("astroui.status.heirline").buffer_picker(
-                function(bufnr) require("astrocore.buffer").close(bufnr) end
-              )
-            end,
-            desc = "Close buffer from tabline",
-          },
-          ["c"] = false,
-        },
-      },
-    },
-  }
-  NVIM_CORE
-
-  # plugins/astroui.lua - UI config with astrodark colorscheme
-  cat > "$NVIM_CONFIG/lua/plugins/astroui.lua" <<'NVIM_UI'
-  return {
-    "AstroNvim/astroui",
-    opts = {
-      colorscheme = "astrodark",
-    },
-  }
-  NVIM_UI
-
-  # plugins/astrolsp.lua - LSP configuration
-  cat > "$NVIM_CONFIG/lua/plugins/astrolsp.lua" <<'NVIM_LSP'
-  return {
-    "AstroNvim/astrolsp",
-    opts = {
-      features = {
-        codelens = true,
-        inlay_hints = false,
-        semantic_tokens = true,
-      },
-      formatting = {
-        format_on_save = { enabled = true },
-        timeout_ms = 1000,
-      },
-    },
-  }
-  NVIM_LSP
-
-  # plugins/none-ls.lua - diagnostics (write-good)
-  cat > "$NVIM_CONFIG/lua/plugins/none-ls.lua" <<'NVIM_NLS'
-  return {
-    "nvimtools/none-ls.nvim",
-    opts = function(_, opts)
-      local null_ls = require "null-ls"
-      opts.sources = require("astrocore").list_insert_unique(opts.sources, {})
-      table.insert(opts.sources, null_ls.builtins.diagnostics.write_good)
-      return opts
-    end,
-  }
-  NVIM_NLS
-
-  # plugins/user.lua - snacks.nvim dashboard, lsp_signature, autopairs
-  cat > "$NVIM_CONFIG/lua/plugins/user.lua" <<'NVIM_USER'
-  return {
-    {
-      "ray-x/lsp_signature.nvim",
-      event = "BufRead",
-      config = function() require("lsp_signature").setup() end,
-    },
-    {
-      "folke/snacks.nvim",
-      priority = 1000,
-      opts = {
-        bigfile = { enabled = true },
-        explorer = { enabled = true },
-        indent = { enabled = true },
-        input = { enabled = true },
-        picker = { enabled = true },
-        notifier = { enabled = true },
-        quickfile = { enabled = true },
-        scope = { enabled = true },
-        scroll = { enabled = true },
-        statuscolumn = { enabled = true },
-        words = { enabled = true },
-        dashboard = { enabled = true },
-      },
-    },
-    { "max397574/better-escape.nvim", enabled = false },
-    {
-      "L3MON4D3/LuaSnip",
-      config = function(plugin, opts)
-        require "astronvim.plugins.configs.luasnip"(plugin, opts)
-        local luasnip = require "luasnip"
-        luasnip.filetype_extend("javascript", { "javascriptreact" })
-      end,
-    },
-    {
-      "windwp/nvim-autopairs",
-      config = function(plugin, opts)
-        require "astronvim.plugins.configs.nvim-autopairs"(plugin, opts)
-        local npairs = require "nvim-autopairs"
-        local Rule = require "nvim-autopairs.rule"
-        local cond = require "nvim-autopairs.conds"
-        npairs.add_rules({
-          Rule("$", "$", { "tex", "latex" })
-            :with_pair(cond.not_after_regex "%%")
-            :with_pair(cond.not_before_regex("xxx", 3))
-            :with_move(cond.none())
-            :with_del(cond.not_after_regex "xx")
-            :with_cr(cond.none()),
-          Rule("a", "a", "-vim"),
-        })
-      end,
-    },
-  }
-  NVIM_USER
-
-  # polish.lua (empty placeholder)
-  cat > "$NVIM_CONFIG/lua/polish.lua" <<'NVIM_POLISH'
-  if true then return end
-  NVIM_POLISH
-
+  TREESITTER
   {{end}}
 
   # Set ownership for neovim config
@@ -735,67 +487,21 @@ post_install: |
   chown -R jwbowers:jwbowers /home/jwbowers
 
   # Create welcome message
-  echo "Creating welcome message..."
   cat > /home/jwbowers/WELCOME.txt <<'WELCOME_END'
   R Research Complete Environment
 
-  =============================================
-  POST-INSTALL CHECKLIST (do these first)
-  =============================================
+  FIRST: Add deploy key to GitHub:
+    cat ~/.ssh/github_deploy_key.pub
+    -> GitHub repo > Settings > Deploy keys > Add (allow write access)
 
-  1. Add the deploy key to GitHub (enables git for all users):
-       cat ~/.ssh/github_deploy_key.pub
-     Copy the output, then go to:
-       GitHub repo > Settings > Deploy keys > Add deploy key
-     Check "Allow write access", click Add key.
+  Then: git clone git@github.com:org/repo.git ~/projects/repo
+  Collaborators: sudo add-collaborator <user> "Name" email@example.com
 
-  2. Clone your repository:
-       git clone git@github.com:your-org/your-repo.git ~/projects/your-repo
-
-  3. Store the repo URL (so add-collaborator clones it automatically):
-       echo "git@github.com:your-org/your-repo.git" | sudo tee /etc/prism/github_repo_url
-
-  4. Add collaborators:
-       sudo add-collaborator jsmith "Jane Smith" jane@university.edu
-     Send them the printed credentials. They open RStudio, log in,
-     and use the Git tab to pull/commit/push.
-
-  =============================================
-
-  Access Points:
-    RStudio Server: http://YOUR_IP:8787
-      Login: username "jwbowers", password from provisioning log
-      To reset: sudo passwd jwbowers
-    Jupyter Lab: jupyter lab --ip=0.0.0.0 --no-browser
-                 then http://YOUR_IP:8888
-
-  Neovim:
-    nvim my_analysis.R      Open a file
-    \rf                     Start R console
-    \l                      Send current line to R
-    \ss                     Send visual selection to R
-    \rq                     Quit R
-    Space                   AstroNvim commands (file finder, etc.)
-    Note: Use a Nerd Font in your local terminal for icons
-
-  Installed Software:
-    R 4.4+, RStudio Server, Neovim + AstroNvim + R.nvim,
-    Quarto, TeX Live 2024, Python 3.12, Jupyter Lab, Git + LFS
-
-  R Packages:
-    tidyverse, lubridate, glue, jsonlite, here,
-    bookdown, blogdown, xaringan, gt, gtsummary, rmarkdown, knitr,
-    httr, xml2, rvest, shiny, plotly,
-    DBI, RSQLite, RPostgres, RMySQL, devtools, reticulate
-
-  Directories:
-    ~/projects/   Research projects
-    ~/data/       Data files
-    ~/notebooks/  Jupyter notebooks
-    ~/documents/  Quarto/RMarkdown documents
-    ~/scripts/    R and Python scripts
+  Access:
+    RStudio: http://YOUR_IP:8787 (password in provisioning log; reset: sudo passwd jwbowers)
+    Jupyter: jupyter lab --ip=0.0.0.0 --no-browser -> http://YOUR_IP:8888
+    Neovim:  nvim file.R  (\rf=start R, \l=send line, \ss=send selection, Space=commands)
   WELCOME_END
-
   chown jwbowers:jwbowers /home/jwbowers/WELCOME.txt
 
   # Install R package plugins
@@ -863,90 +569,28 @@ post_install: |
   # Install add-collaborator helper script
   cat > /usr/local/bin/add-collaborator <<'ADDCOLLAB'
   #!/bin/bash
-  # Add a collaborator to this research instance
-  # Sets up: user account, RStudio password, git identity, GitHub SSH key, repo clone
-  #
-  # Usage: sudo add-collaborator <username> "<Full Name>" <email@example.com>
-
   set -e
-
-  if [ $# -lt 3 ]; then
-      echo "Usage: sudo add-collaborator <username> \"<Full Name>\" <email@example.com>"
-      echo ""
-      echo "Example:"
-      echo "  sudo add-collaborator jsmith \"Jane Smith\" jane.smith@university.edu"
-      echo ""
-      echo "This will:"
-      echo "  1. Create a Linux user account with RStudio Server access"
-      echo "  2. Set git user.name and user.email for their commits"
-      echo "  3. Configure SSH for GitHub (using the instance deploy key)"
-      echo "  4. Clone the project repository into their ~/projects/ directory"
-      exit 1
-  fi
-
-  USERNAME="$1"
-  FULLNAME="$2"
-  EMAIL="$3"
-
-  # Create user account
-  echo "Creating user: ${USERNAME}..."
-  useradd -m -s /bin/bash -G sudo "${USERNAME}" 2>/dev/null || true
-
-  # Set password (required for RStudio Server PAM authentication)
+  [ $# -lt 3 ] && { echo "Usage: sudo add-collaborator <username> \"Full Name\" email"; exit 1; }
+  USERNAME="$1"; FULLNAME="$2"; EMAIL="$3"
+  useradd -m -s /bin/bash -G sudo "$USERNAME" 2>/dev/null || true
   PASSWORD=$(openssl rand -base64 12)
-  echo "${USERNAME}:${PASSWORD}" | chpasswd
-
-  # Configure git identity
-  su - "${USERNAME}" -c "git config --global user.name '${FULLNAME}'"
-  su - "${USERNAME}" -c "git config --global user.email '${EMAIL}'"
-
-  # Set up SSH key for GitHub (using instance deploy key)
-  DEPLOY_KEY="/etc/prism/github_deploy_key"
-  if [ -f "${DEPLOY_KEY}" ]; then
-      mkdir -p "/home/${USERNAME}/.ssh"
-      cp "${DEPLOY_KEY}" "/home/${USERNAME}/.ssh/github_deploy_key"
-      chmod 600 "/home/${USERNAME}/.ssh/github_deploy_key"
-
-      cat > "/home/${USERNAME}/.ssh/config" <<SSHEOF
-  Host github.com
-      IdentityFile ~/.ssh/github_deploy_key
-      StrictHostKeyChecking accept-new
-  SSHEOF
-      chmod 600 "/home/${USERNAME}/.ssh/config"
-      chown -R "${USERNAME}:${USERNAME}" "/home/${USERNAME}/.ssh"
-
-      # Clone repo if configured
-      REPO_URL_FILE="/etc/prism/github_repo_url"
-      if [ -f "${REPO_URL_FILE}" ]; then
-          REPO_URL=$(cat "${REPO_URL_FILE}")
-          REPO_NAME=$(basename "${REPO_URL}" .git)
-          echo "Cloning ${REPO_URL}..."
-          su - "${USERNAME}" -c "git clone '${REPO_URL}' ~/projects/${REPO_NAME}" \
-              || echo "  Clone failed - is the deploy key added to GitHub?"
-      fi
-  else
-      echo "Warning: No deploy key found at ${DEPLOY_KEY}"
-      echo "  Run: sudo ssh-keygen -t ed25519 -f ${DEPLOY_KEY} -N ''"
+  echo "$USERNAME:$PASSWORD" | chpasswd
+  su - "$USERNAME" -c "git config --global user.name '$FULLNAME'; git config --global user.email '$EMAIL'"
+  DK="/etc/prism/github_deploy_key"
+  if [ -f "$DK" ]; then
+    mkdir -p "/home/$USERNAME/.ssh"
+    cp "$DK" "/home/$USERNAME/.ssh/github_deploy_key"
+    chmod 600 "/home/$USERNAME/.ssh/github_deploy_key"
+    printf 'Host github.com\n    IdentityFile ~/.ssh/github_deploy_key\n    StrictHostKeyChecking accept-new\n' > "/home/$USERNAME/.ssh/config"
+    chmod 600 "/home/$USERNAME/.ssh/config"
+    chown -R "$USERNAME:$USERNAME" "/home/$USERNAME/.ssh"
+    RU="/etc/prism/github_repo_url"
+    [ -f "$RU" ] && su - "$USERNAME" -c "git clone '$(cat $RU)' ~/projects/$(basename $(cat $RU) .git)" || true
   fi
-
-  # Create standard directories
-  su - "${USERNAME}" -c "mkdir -p ~/projects ~/data ~/scripts"
-
-  # Show credentials
-  INSTANCE_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || hostname -I | awk '{print $1}')
-  echo ""
-  echo "============================================="
-  echo "  Collaborator Added"
-  echo "  Username: ${USERNAME}"
-  echo "  Password: ${PASSWORD}"
-  echo "  Name:     ${FULLNAME}"
-  echo "  Email:    ${EMAIL}"
-  echo ""
-  echo "  RStudio:  http://${INSTANCE_IP}:8787"
-  echo "============================================="
-  echo ""
-  echo "Share these credentials with ${FULLNAME}."
-  echo "They can change their password in the RStudio terminal: passwd"
+  su - "$USERNAME" -c "mkdir -p ~/projects ~/data ~/scripts"
+  IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || hostname -I | awk '{print $1}')
+  echo ""; echo "=== Collaborator: $USERNAME / $FULLNAME ($EMAIL) ==="
+  echo "Password: $PASSWORD"; echo "RStudio: http://$IP:8787"; echo ""
   ADDCOLLAB
   chmod +x /usr/local/bin/add-collaborator
   echo "Installed: add-collaborator helper (run 'sudo add-collaborator --help')"
