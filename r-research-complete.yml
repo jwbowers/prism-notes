@@ -180,6 +180,10 @@ packages:
   r_dependencies:
     - "gfortran"
     - "libcurl4-openssl-dev"
+    - "libglpk-dev"
+    - "libgmp3-dev"
+    - "libx11-dev"
+    - "libyaml-dev"
     - "libssl-dev"
     - "libxml2-dev"
     - "libfontconfig1-dev"
@@ -685,9 +689,9 @@ idle_detection:
 
 # Instance defaults
 instance_defaults:
+  type: "m7i.xlarge"  # 4 vCPU, 16 GB RAM — good for 2-3 concurrent RStudio users
   ports: [22, 8787, 8888]
-  root_volume_gb: 80  # Larger for LaTeX (texlive-full ~8 GB), R packages, and Python libs
-  instance_type_preference: ["m7i.xlarge", "m6i.xlarge", "m6a.xlarge", "m7i.2xlarge"]
+  root_volume_gb: 80  # Larger for LaTeX, R packages, and Python libs
 
 # Research user configuration
 research_users:
