@@ -83,6 +83,7 @@ parameters:
 
 ```bash
 prism workspace launch "R Research Complete" jake-workspace \
+  --hibernation \
   --param rstudio_password="my-password" \
   --param primary_user_name="Jake Bowers" \
   --param primary_user_email="jwbowers@illinois.edu" \
@@ -103,19 +104,42 @@ prism workspace launch "R Research Complete" jake-workspace \
 | `install_languageserver` | `true` | Install R language server for LSP |
 | `install_renv` | `true` | Install renv for reproducible environments |
 
+### Enabling hibernation support
+
+Hibernation saves the full contents of RAM to disk so that open R
+sessions, running processes, and unsaved work survive a shutdown. AWS
+requires this to be configured at launch time --- you cannot add it to
+an existing instance. Pass the `--hibernation` flag when you launch:
+
+```bash
+prism workspace launch "R Research Complete" jake-workspace --hibernation
+```
+
+The flag does two things behind the scenes: it enables the AWS
+hibernation option on the instance and encrypts the root EBS volume
+(required by AWS for writing the memory snapshot). If you launch
+without the flag and later try `prism workspace hibernate`, Prism
+silently falls back to a regular stop --- your files survive, but
+in-memory state is lost.
+
+**Spot instances do not support hibernation.** If you use `--spot`,
+omit `--hibernation`.
+
 ### After launch: apply idle policy
 
 The template does not automatically apply an idle policy. Apply one
-right after launch so the workspace hibernates when nobody is using it:
+right after launch so the workspace stops or hibernates when nobody is
+using it:
 
 ```bash
 prism idle policy apply jake-workspace research
 ```
 
-This auto-hibernates after 30 minutes of inactivity. A hibernated
-instance costs only EBS storage (~$0.24/day for the 80 GB volume)
-instead of ~$19/day running. Resume takes about 30--60 seconds and
-restores everything in memory.
+The `research` policy stops the instance after 15 minutes of
+inactivity during the day and hibernates it during a nightly window
+(2--6 AM). A stopped or hibernated instance costs only EBS storage
+(~$0.24/day for the 80 GB volume) instead of ~$19/day running. Resume
+takes about 30--60 seconds.
 
 ### Monitoring setup progress
 
@@ -289,6 +313,11 @@ prism workspace hibernate jake-workspace --wait
 prism workspace resume jake-workspace --wait
 ```
 
+Hibernation requires the `--hibernation` flag at launch time (see
+"Enabling hibernation support" above). If the workspace was launched
+without the flag, `prism workspace hibernate` silently falls back to a
+regular stop --- files on disk survive, but in-memory state is lost.
+
 ### Stop and start
 
 Stop shuts down the instance without saving memory state. Installed
@@ -300,8 +329,18 @@ prism workspace stop jake-workspace
 prism workspace start jake-workspace
 ```
 
-Use stop instead of hibernate when you don't need to preserve in-memory
-state and want to avoid the EBS storage cost of the memory snapshot.
+### Cost comparison: hibernate vs. stop
+
+Once the instance reaches the "stopped" state, costs are identical
+regardless of whether you hibernated or stopped. You pay only for EBS
+storage (~$0.24/day for an 80 GB volume). The one minor difference:
+during hibernation the instance stays in a "stopping" state for a few
+minutes while writing RAM to disk, and compute charges continue during
+that window. For a 16 GB RAM instance at $0.20/hour this amounts to a
+few cents per hibernation event.
+
+Choose between them based on whether you need to preserve in-memory
+state, not on cost.
 
 ### Automatic idle policies
 
@@ -340,6 +379,7 @@ List all policies with `prism idle policy list`.
 | Task                        | Command                                              |
 |-----------------------------|------------------------------------------------------|
 | Launch workspace            | `prism workspace launch "template" name`             |
+| Launch with hibernation     | `prism workspace launch "template" name --hibernation` |
 | Launch with params          | `prism workspace launch "template" name --param key=value` |
 | Connect via SSH             | `prism workspace connect name`                       |
 | List workspaces             | `prism workspace list`                               |
