@@ -170,6 +170,75 @@ Each collaborator gets their own user account on the instance. This
 gives everyone a separate home directory, their own RStudio session, and
 a distinct git identity.
 
+### Opening ports for remote collaborators
+
+By default, Prism restricts RStudio (port 8787) and Jupyter (port 8888)
+to the IP address or `/24` subnet of whoever launched the workspace.
+SSH (port 22) is open to everyone. This means collaborators on a
+different network --- a different university, country, or home ISP ---
+can SSH in but will get a connection timeout when they try to open
+RStudio in their browser.
+
+The fix is to edit the AWS security group manually. Prism does not yet
+have a CLI option for adding additional IP ranges.
+
+#### Step-by-step: edit the security group in the AWS Console
+
+1. **Confirm the region.** Run `prism workspace list` and note the
+   region your workspace is running in (e.g., `us-east-2`).
+
+2. **Open the EC2 console.** Go to
+   <https://console.aws.amazon.com/ec2> and select the correct region
+   from the dropdown in the top-right corner of the page.
+
+3. **Navigate to Security Groups.** In the left sidebar, under
+   **Network & Security**, click **Security Groups**.
+
+4. **Find `prism-access`.** Type `prism-access` in the search bar.
+   Click on the security group to open its details. (Prism uses a
+   single security group named `prism-access` for all workspaces in a
+   given VPC.)
+
+5. **Open the inbound rules editor.** Click the **Inbound rules** tab
+   at the bottom of the page, then click the **Edit inbound rules**
+   button.
+
+6. **Find the rule for port 8787.** Look for the row where the
+   **Port range** column shows `8787`. The **Source** column will show
+   your IP or subnet (something like `142.204.67.0/24`).
+
+7. **Change the source.** Click the **Source** field and change it to
+   one of the following:
+
+   - `0.0.0.0/0` --- allows access from any IPv4 address. Simplest
+     option; RStudio still requires a username and password.
+   - A specific CIDR like `152.74.0.0/16` --- restricts access to a
+     known network (e.g., your collaborator's university). More secure
+     but requires knowing their IP range.
+
+8. **(Optional) Repeat for port 8888.** If collaborators need
+   JupyterLab, find the rule for port `8888` and make the same change.
+
+9. **Save.** Click **Save rules** at the bottom of the page.
+
+Changes take effect within a few seconds. Ask a collaborator to try
+loading `http://<workspace-ip>:8787` in their browser to confirm.
+
+#### Things to know about this workaround
+
+- **You must redo this after every relaunch.** Prism recreates the
+  security group rules each time a workspace launches, restricting
+  ports to the launcher's current IP. If you delete and relaunch the
+  workspace, repeat the steps above.
+- **`prism access refresh` does not help.** That command updates the
+  rules for *your* IP when it changes (e.g., after your laptop gets a
+  new DHCP lease). It does not add additional IPs for collaborators.
+- **Security trade-off.** Opening port 8787 to `0.0.0.0/0` means
+  anyone on the internet can reach the RStudio login page. RStudio
+  requires a password, so the risk is modest --- but use a strong
+  password. If you know your collaborators' IP ranges, restricting to
+  specific CIDRs is safer.
+
 ### Create user accounts
 
 ```bash
@@ -386,6 +455,7 @@ List all policies with `prism idle policy list`.
 | List (refresh from AWS)     | `prism workspace list --refresh`                     |
 | Monitor setup progress      | `prism logs name --type cloud-init-out --follow`     |
 | Get RStudio password        | `cat ~/.rstudio-credentials` (on instance)           |
+| Open ports for collaborators | Edit `prism-access` security group in AWS Console    |
 | Add a collaborator          | `prism user create username --full-name "Name"`      |
 | Hibernate (save state)      | `prism workspace hibernate name --wait`              |
 | Resume from hibernation     | `prism workspace resume name --wait`                 |
