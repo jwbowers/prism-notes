@@ -368,6 +368,51 @@ An `m7i.xlarge` costs roughly $0.20/hour. Left running 24/7, that is
 about $144/month. If your team works 8 hours/day on weekdays (~168
 hours/month), hibernating during off-hours cuts the bill by roughly 75%.
 
+### Before stopping: check for active users
+
+Before you stop or hibernate the workspace, verify that no collaborator
+is mid-session and that all changes have been pushed to GitHub.
+
+**Check for active RStudio sessions.** Each logged-in RStudio user runs
+their own `rsession` process. From your local machine:
+
+```bash
+prism workspace exec my-workspace "ps aux | grep rsession | grep -v grep"
+```
+
+If someone is connected you will see a line like:
+
+```
+jsmith  6694  0.5  1.9 1100820 320588 ?  Sl  Mar19  4:05 /usr/lib/rstudio-server/bin/rsession -u jsmith ...
+```
+
+The username at the start of the line tells you who is logged in. The
+`Sl` state means the process is sleeping (idle); `Rl` would mean an R
+computation is actively running. No output means no one is connected.
+
+**Check for uncommitted or unpushed changes.** Find all git repos in a
+collaborator's home directory and inspect their status:
+
+```bash
+# Find repos
+prism workspace exec my-workspace "find /home/jsmith -maxdepth 3 -name .git -type d"
+
+# Check for uncommitted changes
+prism workspace exec my-workspace "sudo -u jsmith git -C /home/jsmith/projects/my-repo status"
+
+# Check for unpushed commits
+prism workspace exec my-workspace "sudo -u jsmith git -C /home/jsmith/projects/my-repo log --oneline origin/main..HEAD"
+```
+
+If `git status` shows a clean working tree and `git log` produces no
+output, the collaborator's work is fully synced with GitHub and it is
+safe to stop the instance.
+
+**Watch for duplicate clones.** Collaborators sometimes clone the repo a
+second time outside of `~/projects/`. The `find` command above will
+reveal this. If you spot duplicates, let the collaborator know so they
+work from one canonical location.
+
 ### Hibernate and resume (recommended)
 
 Hibernate saves the full memory state to disk, then stops the instance.
@@ -457,6 +502,8 @@ List all policies with `prism idle policy list`.
 | Get RStudio password        | `cat ~/.rstudio-credentials` (on instance)           |
 | Open ports for collaborators | Edit `prism-access` security group in AWS Console    |
 | Add a collaborator          | `prism user create username --full-name "Name"`      |
+| Check active RStudio users  | `prism workspace exec name "ps aux \| grep rsession \| grep -v grep"` |
+| Check collaborator git status | `prism workspace exec name "sudo -u user git -C /home/user/projects/repo status"` |
 | Hibernate (save state)      | `prism workspace hibernate name --wait`              |
 | Resume from hibernation     | `prism workspace resume name --wait`                 |
 | Stop (discard memory state) | `prism workspace stop name`                          |
