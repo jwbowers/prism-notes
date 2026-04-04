@@ -465,15 +465,41 @@ post_install: |
   }
   RNVIM
 
-  # Add treesitter parsers for R, LaTeX, markdown
+  # In AstroNvim v6, treesitter config lives in astrocore opts
   cat > "$NVIM_CONFIG/lua/plugins/treesitter.lua" <<'TREESITTER'
   return {
     "nvim-treesitter/nvim-treesitter",
-    opts = {
-      ensure_installed = { "r", "rnoweb", "lua", "vim", "markdown", "markdown_inline", "yaml", "latex", "csv" },
-    },
+    branch = "main",
   }
   TREESITTER
+
+  cat > "$NVIM_CONFIG/lua/plugins/astrocore.lua" <<'ASTROCORE'
+  return {
+    "AstroNvim/astrocore",
+    opts = {
+      treesitter = {
+        highlight = true,
+        indent = true,
+        auto_install = true,
+        ensure_installed = { "r", "rnoweb", "lua", "vim", "markdown", "markdown_inline", "yaml", "latex", "csv" },
+      },
+    },
+  }
+  ASTROCORE
+
+  # Ensure tree-sitter-cli is available for compiling parsers
+  cat > "$NVIM_CONFIG/lua/plugins/mason.lua" <<'MASON'
+  return {
+    {
+      "WhoIsSethDaniel/mason-tool-installer.nvim",
+      opts = {
+        ensure_installed = {
+          "tree-sitter-cli",
+        },
+      },
+    },
+  }
+  MASON
   {{end}}
 
   # Set ownership for neovim config

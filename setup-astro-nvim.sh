@@ -78,6 +78,7 @@ cat > "${NVIM_CONFIG}/lua/lazy_setup.lua" <<'ENDFILE'
 require("lazy").setup({
   {
     "AstroNvim/AstroNvim",
+    version = "^6",
     import = "astronvim.plugins",
     opts = {
       mapleader = " ",
@@ -145,16 +146,12 @@ return {
 ENDFILE
 
 # --- plugins/treesitter.lua ---
+# In AstroNvim v6, treesitter highlight/indent/ensure_installed moved to astrocore opts.
+# This file just ensures nvim-treesitter uses the correct branch.
 cat > "${NVIM_CONFIG}/lua/plugins/treesitter.lua" <<'ENDFILE'
 return {
   "nvim-treesitter/nvim-treesitter",
-  run = ":TSUpdate",
-  opts = {
-    ensure_installed = {
-      "lua", "vim", "markdown", "markdown_inline",
-      "r", "rnoweb", "yaml", "latex", "csv",
-    },
-  },
+  branch = "main",
 }
 ENDFILE
 
@@ -180,6 +177,15 @@ cat > "${NVIM_CONFIG}/lua/plugins/astrocore.lua" <<'ENDFILE'
 return {
   "AstroNvim/astrocore",
   opts = {
+    treesitter = {
+      highlight = true,
+      indent = true,
+      auto_install = true,
+      ensure_installed = {
+        "lua", "vim", "markdown", "markdown_inline",
+        "r", "rnoweb", "yaml", "latex", "csv",
+      },
+    },
     features = {
       large_buf = { size = 1024 * 256, lines = 10000 },
       autopairs = true,
