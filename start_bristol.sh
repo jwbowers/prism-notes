@@ -3,7 +3,7 @@
 # Start the bristol-workspace on Prism, wait for RUNNING state,
 # and post the public IP to Slack. Retries up to 3 times.
 
-SLACK_WEBHOOK="https://hooks.slack.com/services/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"
+SLACK_WEBHOOK="https://hooks.slack.com/services/"
 WORKSPACE="bristol-workspace"
 MAX_ATTEMPTS=3
 WAIT_SECONDS=60
