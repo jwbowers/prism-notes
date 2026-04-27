@@ -6,10 +6,10 @@ long_description: |
   r-research-full-stack and r-publishing-stack into a single template.
 
   Includes:
-  - R 4.5+ with tidyverse and extended data wrangling packages
-  - RStudio Server 2026.01 (web-based IDE on port 8787)
+  - R 4.6.0 with tidyverse and extended data wrangling packages
+  - RStudio Server 2026.04 (web-based IDE on port 8787)
   - Neovim with AstroNvim, R.nvim, treesitter, and LSP support
-  - Quarto for scientific publishing
+  - Quarto 1.9 for scientific publishing
   - Full TeX Live 2024 for PDF generation
   - Publishing packages: bookdown, blogdown, xaringan, gt, gtsummary
   - Python 3.12 with Jupyter Lab
@@ -58,7 +58,15 @@ parameters:
     display_name: "RStudio Server Version"
     description: "RStudio Server version to install"
     type: "choice"
-    choices: ["latest", "2026.01.1-403", "2026.01.0-392", "2024.12.1-542", "2024.09.1-394"]
+    choices:
+      [
+        "latest",
+        "2026.04.0-526",
+        "2026.01.2-418",
+        "2026.01.1-403",
+        "2026.01.0-392",
+        "2025.09.2-418",
+      ]
     default: "latest"
     group: "Development Environment"
     order: 1
@@ -138,7 +146,7 @@ parameters:
     display_name: "Language Server Version"
     description: "Version of languageserver package"
     type: "choice"
-    choices: ["latest", "0.3.16", "0.3.15"]
+    choices: ["latest", "0.3.17", "0.3.16", "0.3.15"]
     default: "latest"
     group: "R Packages"
     order: 11
@@ -158,7 +166,7 @@ parameters:
     display_name: "renv Version"
     description: "Version of renv package"
     type: "choice"
-    choices: ["latest", "1.0.7", "1.0.3"]
+    choices: ["latest", "1.2.2", "1.2.0"]
     default: "latest"
     group: "R Packages"
     order: 21
@@ -202,21 +210,21 @@ packages:
   # publishing with R/Quarto/biblatex/tikz/XeTeX plus Spanish language.
   latex:
     - "texlive-latex-base"
-    - "texlive-latex-recommended"   # KOMA-Script (scrartcl), fontspec, unicode-math, microtype
-    - "texlive-latex-extra"         # algorithm2e, fvextra, authblk, wrapfig, tabu, threeparttable, pdflscape, etc.
-    - "texlive-fonts-recommended"   # lmodern, standard fonts
-    - "texlive-fonts-extra"         # extended font collection
-    - "texlive-science"             # algorithm2e, siunitx, math extras
-    - "texlive-xetex"              # XeTeX engine for unicode-math/fontspec
-    - "texlive-luatex"             # LuaTeX engine support
-    - "texlive-bibtex-extra"       # biblatex, biblatex-chicago, biber support files
-    - "texlive-publishers"         # publisher style files
-    - "texlive-pictures"           # TikZ, PGF, tikz-cd, pgfpages
-    - "texlive-plain-generic"      # generic macro packages
-    - "texlive-lang-spanish"       # Spanish language/hyphenation support
-    - "texlive-lang-english"       # English language support
-    - "biber"                      # biblatex backend processor
-    - "lmodern"                    # Latin Modern fonts
+    - "texlive-latex-recommended" # KOMA-Script (scrartcl), fontspec, unicode-math, microtype
+    - "texlive-latex-extra" # algorithm2e, fvextra, authblk, wrapfig, tabu, threeparttable, pdflscape, etc.
+    - "texlive-fonts-recommended" # lmodern, standard fonts
+    - "texlive-fonts-extra" # extended font collection
+    - "texlive-science" # algorithm2e, siunitx, math extras
+    - "texlive-xetex" # XeTeX engine for unicode-math/fontspec
+    - "texlive-luatex" # LuaTeX engine support
+    - "texlive-bibtex-extra" # biblatex, biblatex-chicago, biber support files
+    - "texlive-publishers" # publisher style files
+    - "texlive-pictures" # TikZ, PGF, tikz-cd, pgfpages
+    - "texlive-plain-generic" # generic macro packages
+    - "texlive-lang-spanish" # Spanish language/hyphenation support
+    - "texlive-lang-english" # English language support
+    - "biber" # biblatex backend processor
+    - "lmodern" # Latin Modern fonts
     - "pandoc"
     - "ghostscript"
     - "pdftk-java"
@@ -306,9 +314,9 @@ services:
 
 # Ports to open
 ports:
-  - 22    # SSH
-  - 8787  # RStudio Server
-  - 8888  # Jupyter
+  - 22 # SSH
+  - 8787 # RStudio Server
+  - 8888 # Jupyter
 
 # Post-installation script
 post_install: |
@@ -325,8 +333,8 @@ post_install: |
   echo "Updating system packages..."
   apt-get update && apt-get upgrade -y
 
-  # Install R 4.4.2
-  echo "Installing R 4.4.2..."
+  # Install R (latest stable from CRAN PPA; 4.6.0 as of 2026-04-24)
+  echo "Installing R from CRAN..."
   wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
   add-apt-repository -y "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
   apt-get update
@@ -340,9 +348,9 @@ post_install: |
   echo "Installing RStudio Server..."
   apt-get install -y gdebi-core
   if [ "{{.rstudio_version}}" = "latest" ]; then
-    # Use latest available version (2026.01.1-403 as of February 2026)
+    # Use latest available version (2026.04.0-526 as of April 2026)
     # Posit provides jammy (Ubuntu 22.04) debs for Ubuntu 24.04 via glibc compatibility
-    RSTUDIO_VERSION="2026.01.1-403"
+    RSTUDIO_VERSION="2026.04.0-526"
   else
     RSTUDIO_VERSION="{{.rstudio_version}}"
   fi
@@ -355,11 +363,11 @@ post_install: |
   systemctl start rstudio-server
   echo "RStudio Server installed and started (port 8787)"
 
-  # Install Quarto 1.6.33
+  # Install Quarto 1.9.37
   echo "Installing Quarto..."
-  wget https://github.com/quarto-dev/quarto-cli/releases/download/v1.6.33/quarto-1.6.33-linux-amd64.deb
-  apt-get install -y ./quarto-1.6.33-linux-amd64.deb
-  rm quarto-1.6.33-linux-amd64.deb
+  wget https://github.com/quarto-dev/quarto-cli/releases/download/v1.9.37/quarto-1.9.37-linux-amd64.deb
+  apt-get install -y ./quarto-1.9.37-linux-amd64.deb
+  rm quarto-1.9.37-linux-amd64.deb
   echo "Quarto installed"
 
   # Install R packages using Posit Package Manager (pre-built binaries for Ubuntu 24.04)
@@ -704,7 +712,7 @@ post_install: |
 # Idle detection configuration
 idle_detection:
   enabled: true
-  idle_threshold_minutes: 30  # Longer threshold for research workloads
+  idle_threshold_minutes: 30 # Longer threshold for research workloads
   check_processes:
     - "R"
     - "rsession"
@@ -715,9 +723,9 @@ idle_detection:
 
 # Instance defaults
 instance_defaults:
-  type: "m7i.xlarge"  # 4 vCPU, 16 GB RAM — good for 2-3 concurrent RStudio users
+  type: "m7i.xlarge" # 4 vCPU, 16 GB RAM — good for 2-3 concurrent RStudio users
   ports: [22, 8787, 8888]
-  root_volume_gb: 80  # Larger for LaTeX, R packages, and Python libs
+  root_volume_gb: 80 # Larger for LaTeX, R packages, and Python libs
 
 # Research user configuration
 research_users:
@@ -728,11 +736,11 @@ research_users:
 
 # Component versions (for reference)
 components:
-  r_version: "4.4.2"
-  rstudio_server_version: "2026.01.1-403"
+  r_version: "4.6.0"
+  rstudio_server_version: "2026.04.0-526"
   neovim_version: "latest-stable"
-  astronvim_version: "latest"
-  quarto_version: "1.6.33"
+  astronvim_version: "v6"
+  quarto_version: "1.9.37"
   python_version: "3.12"
   texlive_version: "2024"
 
