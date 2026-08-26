@@ -108,9 +108,9 @@ template, alongside the old instance rather than replacing it.
 | Neovim | not checked | **0.12.5** |
 
 Both columns are measured, not inferred. The new instance matches
-Jake's laptop exactly on R, Quarto, and renv, which was the point of
-the exercise. RStudio Server is active with port 8787 listening,
-`library(tidyverse)` loads, and 181 packages sit in the site library.
+Jake's laptop exactly on R, Quarto, and renv. RStudio Server is
+active with port 8787 listening, `library(tidyverse)` loads, and 181
+packages sit in the site library.
 
 Pinning renv to 1.2.3 rather than accepting "latest" exercised the
 `remotes::install_version` branch of the template, which had never
@@ -183,27 +183,39 @@ first.
 1. **Register the new deploy key on GitHub.** The new instance
    generated its own ed25519 key. Until the public key is added to
    the deploy keys of `bowers-illinois-edu/fully_specified_bf`, no
-   account on the new instance can clone or push, and the auto-clone
-   at launch had nothing to authenticate with. Only Jake can grant
-   this. The key is:
+   account on the new instance can clone or push. The launch-time
+   auto-clone almost certainly failed for the same reason, though
+   that was inferred rather than checked in the log. Only Jake can
+   grant this. The key is:
 
        ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ3z7fwZV5dxi2xz1sA3/VEygRuphrMbBEfZuOOjmxnC prism-ip-172-31-7-125-deploy-key
-2. **Recreate the collaborator accounts** on the new instance:
+
+2. **Check at next start, before assuming anything works**: that
+   `/usr/local/bin/add-collaborator` exists (step 3 below assumes it),
+   that the repo clone succeeded once the deploy key is registered,
+   and that AstroNvim codelens behaves when an R file is opened. None
+   of the three was verified on 2026-08-26.
+3. **Retrieve the RStudio password.** The launch set no
+   `rstudio_password`, so the template generated a random one:
+   `prism workspace exec bristol-workspace-2 'cat
+   /home/jwbowers/.rstudio-credentials'`. Without it there is no
+   RStudio login on the new instance.
+4. **Recreate the collaborator accounts** on the new instance:
    `sudo add-collaborator mlopez ...` and
    `sudo add-collaborator drgarjardo ...`, then send each person
    their new password. Account names should match the old instance so
    paths in their notes still read correctly.
-3. **Reopen port 8787.** The security group is created fresh per
+5. **Reopen port 8787.** The security group is created fresh per
    launch, so the manual open-to-all edit does not carry over.
-4. **Decide the name question.** The new workspace is
+6. **Decide the name question.** The new workspace is
    `bristol-workspace-2` because the old one still holds
    `bristol-workspace`. Either keep the suffixed name and update
    `start_bristol.sh` and the cron line, or terminate the old
    instance and relaunch under the original name.
-5. **Terminate the old instance** once collaborators have moved. This
+7. **Terminate the old instance** once collaborators have moved. This
    is the only destructive step and nothing above depends on it. The
    work-at-risk check above is already done.
-6. **The 5 AM cron is currently commented out** in `crontab -l`, and
+8. **The 5 AM cron is currently commented out** in `crontab -l`, and
    the last entry in `start_bristol.log` is 2026-06-29. Separately,
    `start_bristol.sh` had its Slack webhook redacted in commit
    `098c0c5` (2026-04-20), so `SLACK_WEBHOOK` is now the bare
