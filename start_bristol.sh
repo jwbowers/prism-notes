@@ -1,10 +1,19 @@
 #!/usr/bin/env bash
 # start_bristol.sh
-# Start the bristol-workspace on Prism, wait for RUNNING state,
-# and post the public IP to Slack. Retries up to 3 times.
+# Start the workspace on Prism, wait for RUNNING state, and post the
+# public IP to Slack. Retries up to 3 times.
+#
+# SLACK_WEBHOOK is deliberately empty in the repo: the real URL is a
+# secret and was stripped in commit 098c0c5. Export it from the
+# environment instead of pasting it back into this file, or the curl
+# calls below post to a dead URL and fail silently:
+#
+#   export SLACK_WEBHOOK="https://hooks.slack.com/services/T.../B.../..."
+#
+# Keep the real value out of the repository.
 
-SLACK_WEBHOOK="https://hooks.slack.com/services/"
-WORKSPACE="bristol-workspace"
+SLACK_WEBHOOK="${SLACK_WEBHOOK:-https://hooks.slack.com/services/}"
+WORKSPACE="${WORKSPACE:-bristol-workspace-2}"
 MAX_ATTEMPTS=3
 WAIT_SECONDS=60
 
