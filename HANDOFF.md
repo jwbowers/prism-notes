@@ -133,4 +133,6 @@ choices. Keep them in mind when editing the YAML.
 - Version pins as of last edit (2026-08-26): R 4.6.1 (released
   2026-06-24), RStudio Server 2026.08.1-195, Quarto 1.10.18,
   languageserver 0.3.18, renv 1.2.4 on CRAN. Jake's laptop runs
-  R 4.6.1, renv 1.2.3, Quarto 1.10.18, so a fresh launch matches it.
+  R 4.6.1, renv 1.2.3, Quarto 1.10.18, so a fresh launch matches it
+  on R and Quarto; renv defaults to "latest" (1.2.4), or pick 1.2.3
+  from the choices list at launch for exact laptop parity.
