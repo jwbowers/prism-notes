@@ -25,7 +25,7 @@ long_description: |
   - Teaching data science
 
 author: "Prism Team"
-version: "1.1.0"
+version: "1.2.0"
 base: "ubuntu-24.04"
 
 # Connection type
@@ -231,10 +231,18 @@ packages:
     - "pdftk-java"
     - "imagemagick"
 
-  # Database clients
+  # Database clients.
+  # The -dev packages supply the C headers (libpq-fe.h, mysql.h) that
+  # RPostgres and RMySQL need to compile. They are not optional whenever
+  # R packages build from source: on the 2026-08-26 launch, Posit Package
+  # Manager served sources rather than noble binaries for R 4.6, and both
+  # packages failed with "fatal error: libpq-fe.h: No such file or
+  # directory" while every pure-R package installed fine.
   databases:
     - "postgresql-client"
+    - "libpq-dev"
     - "mysql-client"
+    - "libmysqlclient-dev"
     - "sqlite3"
 
   # Data processing tools
