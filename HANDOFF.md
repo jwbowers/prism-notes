@@ -178,57 +178,71 @@ RMySQL failures were this, not a missing header. Install in one call,
 and if a retry fails, `rm -rf /usr/local/lib/R/site-library/00LOCK-*`
 first.
 
+## Cutover completed 2026-08-26
+
+The new instance is set up and ready for collaborators. All of the
+following was done and verified, then the instance was stopped.
+
+**Deploy key.** The instance's ed25519 public key is registered on
+`bowers-illinois-edu/fully_specified_bf` as deploy key 161423167,
+titled "bristol-workspace-2", read-write. The old instance's key
+("Prism R-Research-Complete", 146008562) is still there and still
+serves the old instance. Remove it whenever the old instance goes.
+
+**Accounts.** `mlopez` and `drgarjardo` were created with
+`add-collaborator`, matching the old instance's usernames. Note that
+the username `drgarjardo` carries a transposed "r": his own git author
+name is `drgajardo`. The username was kept as-is for continuity with
+the old instance, but it is worth deciding whether to correct it.
+
+Git identities were taken from the project's own commit history
+rather than invented: `Matias Lopez <matiaslopez.uy@gmail.com>` (99
+commits) and `drgajardo <daniel.98.g@gmail.com>` (28 commits, the
+most recent on 2026-08-22).
+
+**Clones.** All three accounts have
+`~/projects/fully_specified_bf` on `main` at the same commit. The
+launch-time clone had indeed failed, because the key was not yet
+registered; re-running it after registration worked, which is the
+end-to-end proof that the key is good.
+
+**Passwords.** Collaborator passwords are in
+`/root/collaborator-credentials.txt` (mode 600) on the instance, not
+in any transcript or repo. Jake's RStudio password is in
+`/home/jwbowers/.rstudio-credentials`. Read either with:
+
+    prism workspace exec bristol-workspace-2 'cat /root/collaborator-credentials.txt'
+
+**Codelens.** `codelens = true` in
+`~/.config/nvim/lua/plugins/astrolsp.lua`, AstroNvim tracks `^6`, and
+headless `nvim` exits 0. Whether it renders against the R language
+server still wants a human opening an R file.
+
 ## Pending work
 
-1. **Register the new deploy key on GitHub.** The new instance
-   generated its own ed25519 key. Until the public key is added to
-   the deploy keys of `bowers-illinois-edu/fully_specified_bf`, no
-   account on the new instance can clone or push. The launch-time
-   auto-clone almost certainly failed for the same reason, though
-   that was inferred rather than checked in the log. Only Jake can
-   grant this. The key is:
+Only three things are left, and all three are Jake's to decide rather
+than anyone's to execute.
 
-       ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ3z7fwZV5dxi2xz1sA3/VEygRuphrMbBEfZuOOjmxnC prism-ip-172-31-7-125-deploy-key
-
-2. **Check at next start, before assuming anything works**: that
-   `/usr/local/bin/add-collaborator` exists (step 3 below assumes it),
-   that the repo clone succeeded once the deploy key is registered,
-   and that AstroNvim codelens behaves when an R file is opened. None
-   of the three was verified on 2026-08-26.
-3. **Retrieve the RStudio password.** The launch set no
-   `rstudio_password`, so the template generated a random one:
-   `prism workspace exec bristol-workspace-2 'cat
-   /home/jwbowers/.rstudio-credentials'`. Without it there is no
-   RStudio login on the new instance.
-4. **Recreate the collaborator accounts** on the new instance:
-   `sudo add-collaborator mlopez ...` and
-   `sudo add-collaborator drgarjardo ...`, then send each person
-   their new password. Account names should match the old instance so
-   paths in their notes still read correctly.
-5. ~~Reopen port 8787.~~ **Already done, and the belief behind this
-   item was wrong.** The security group is *not* recreated per
-   launch: `bristol-workspace-2` was placed in the same
-   `sg-0f316041b4b0cab8a` ("prism-access") as the old instance,
-   which already carries 8787 open to `0.0.0.0/0`. So RStudio on the
-   new instance is reachable with no security-group work. Port 8888
-   (Jupyter) remains restricted to `142.204.67.0/24`, and port 22 is
-   open to the world. Because the group is shared, editing it affects
-   both instances at once.
-6. **Decide the name question.** The new workspace is
-   `bristol-workspace-2` because the old one still holds
-   `bristol-workspace`. Either keep the suffixed name and update
-   `start_bristol.sh` and the cron line, or terminate the old
-   instance and relaunch under the original name.
-7. **Terminate the old instance** once collaborators have moved. This
-   is the only destructive step and nothing above depends on it. The
-   work-at-risk check above is already done.
-8. **The 5 AM cron is currently commented out** in `crontab -l`, and
-   the last entry in `start_bristol.log` is 2026-06-29. Separately,
-   `start_bristol.sh` had its Slack webhook redacted in commit
-   `098c0c5` (2026-04-20), so `SLACK_WEBHOOK` is now the bare
-   `https://hooks.slack.com/services/` and any post would fail. Both
-   need attention before auto-start and its Slack notice work again.
-   Keep the real webhook out of the repo.
+1. **Send the collaborators their passwords and the new address.**
+   Read them from `/root/collaborator-credentials.txt` as shown
+   above. The public IP changes on every start, so whatever address
+   they get today is good only for today's session.
+2. **Terminate the old instance** once Matias and Daniel have
+   confirmed they are working on the new one. This is the only
+   destructive step, nothing else depends on it, and the check for
+   work at risk is already done. Delete deploy key 146008562 at the
+   same time. Until then it costs about $6.40 a month in storage.
+   Naming resolved: the new workspace keeps the name
+   `bristol-workspace-2`, and `start_bristol.sh` now targets it.
+3. **Decide whether to restore the 5 AM auto-start.** Two separate
+   things are off. The cron line in `crontab -l` is commented out, so
+   nothing starts automatically, and the last log entry is
+   2026-06-29. And `SLACK_WEBHOOK` was stripped in `098c0c5`
+   (2026-04-20), so a post would go to a dead URL and fail silently.
+   Uncommenting the cron restores daily starts and daily billing;
+   restoring the notice needs the real webhook exported from the
+   environment, which the script header now explains. Keep the real
+   value out of the repository.
 
 ## Durable design rationale (carry forward indefinitely)
 
@@ -254,6 +268,19 @@ choices. Keep them in mind when editing the YAML.
   launch installed Neovim 0.12.5 and AstroNvim set up cleanly, but
   nobody has opened an R file in it yet, so whether codelens is back
   on is still unconfirmed.
+- **The prism daemon spawned competing copies** on 2026-08-26. Each
+  `prism` call started another `prismd` while an earlier one was
+  still coming up, and calls then failed with "Check if 'prismd'
+  binary is in your PATH" and a stale-pid muddle. Recovery:
+  `pkill -f /opt/homebrew/bin/prismd`, delete `~/.prism/daemon.pid`
+  and `~/.prism/prismd.pid`, then run any prism command to start one
+  cleanly. `prism workspace stop` also failed this way, so the stop
+  was issued with `aws ec2 stop-instances` instead. When prism is
+  unreliable, the AWS CLI is the fallback for start, stop, and state.
+- **`prismd` is a symlink into the source tree**
+  (`/opt/homebrew/bin/prismd -> ~/src/prism/bin/prismd`), which is a
+  second reason `~/src/prism` must stay checked out, alongside the
+  base-template symlink described above.
 - **`spored` failed to install** on the 2026-08-26 launch: the log
   shows `spored download failed` and `spored install failed`, though
   the systemd unit was still linked. `spored` is Prism's idle-activity
