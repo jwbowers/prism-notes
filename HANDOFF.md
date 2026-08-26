@@ -23,30 +23,151 @@ Last reorganized: 2026-08-26.
   comment or documentation edits. Git history holds the details.
 - **`start_bristol.log`** -- untracked log file, gitignored.
 
+### Template discovery was broken; fixed 2026-08-26
+
+A `--dry-run` launch on 2026-08-26 failed with `template not found:
+R Research Complete`, and `prism templates` did not list it. The
+cause was not the symlink, which is intact
+(`~/.prism/templates/r-research-complete.yml` ->
+`~/repos/prism-notes/r-research-complete.yml`). Prism found the file
+and then skipped it:
+
+    Warning: skipping template R Research Complete:
+      parent template not found: Ubuntu 24.04 LTS (x86_64)
+
+Our template declares `inherits: ["Ubuntu 24.04 LTS (x86_64)"]`.
+Prism v0.36.1 (homebrew) searches only two directories --
+`~/.prism/templates` and `/opt/homebrew/share/prism/templates` -- and
+the second does not exist, so no base template was on the search
+path. The base templates ship in the *source* tree only, at
+`~/src/prism/templates/base/`.
+
+Fix applied: symlink the base template into the user template
+directory, which Prism does search.
+
+    ln -sf ~/src/prism/templates/base/ubuntu-24.04-x86.yml \
+           ~/.prism/templates/ubuntu-24.04-x86.yml
+
+After this, `prism templates validate "R Research Complete"` reports
+`Valid (0 warnings, 5 suggestions)` and a dry-run launch succeeds.
+This is an environment fix on Jake's laptop, not a repo change; any
+other host that launches this template needs the same symlink. It
+depends on `~/src/prism` staying checked out.
+
+Two cautions learned here. First, do **not** follow Prism's suggested
+remedy `rm -rf ~/.prism/templates` -- that directory holds the
+symlink to this repo, and deleting it breaks the whole workflow.
+Second, `prism workspace launch --dry-run` prints
+`Instance <name> launched successfully` even though it creates
+nothing; verified against `aws ec2 describe-instances`, which showed
+only the original instance. Trust AWS, not that message.
+
+### `--dry-run` leaves a phantom that blocks the real launch
+
+Prism v0.36.1 bug, hit on 2026-08-26 and worth reporting upstream. A
+`--dry-run` launch writes a record into `~/.prism/state.json` with
+`state: dry-run` and an empty instance id. The real launch of that
+same name then fails:
+
+    API error 409: Instance named "bristol-workspace-2" already
+    exists (state: dry-run, id: ). Use a different name, or
+    terminate the existing instance first.
+
+So a dry run burns the name it was testing. The fix was to stop the
+daemon (`prism admin daemon stop`), delete that one record from
+`~/.prism/state.json`, and let the daemon restart on the next
+command. Back the file up first, and match on both `state == "dry-run"`
+and an empty id before deleting, so a real instance can never be hit
+by mistake. A backup sits at `~/.prism/state.json.pre-phantom-cleanup.bak`.
+
+An unrelated stub, `~/.prism/templates/new-template.yml`, is invalid
+YAML and prints a harmless warning on every prism command. Deleting
+it would quiet the noise.
+
 `check_activity.sh` was added in commit `c0ae87a` (2026-05-19): a
 script that reports who is currently using the workspace (SSH logins,
 RStudio Server sessions, active R / Quarto / Jupyter processes, load
 average) via `prism workspace exec`. See the file header for usage.
 
+## The two instances, as of 2026-08-26
+
+`bristol-workspace-2` was launched on 2026-08-26 from the refreshed
+template, alongside the old instance rather than replacing it.
+
+| | old `bristol-workspace` | new `bristol-workspace-2` |
+|---|---|---|
+| instance id | `i-0183fcfa9115a8f55` | `i-0f863fb51586f1e90` |
+| launched | 2026-03-18 | 2026-08-26 |
+| type | m7i.xlarge | m7i.xlarge (`--size L`) |
+| hibernation | no | **yes** |
+| R | 4.5.3 | 4.6.x from the CRAN PPA |
+| Quarto | 1.6.33 | 1.10.18 |
+| RStudio Server | 2026.01.1+403 | 2026.08.1-195 |
+| renv | 1.1.8 | 1.2.3 (chosen for laptop parity) |
+
+The old instance was measured, not guessed: it was started briefly on
+2026-08-26 to read these versions and then stopped again. The
+divergence was wider than the earlier note assumed -- Quarto was four
+minor versions behind, and renv a full minor version behind.
+
+Hibernation is confirmed enabled on the new instance
+(`HibernationOptions.Configured = true` in
+`aws ec2 describe-instances`) and confirmed absent on the old one,
+which settles the standing question about the silent fallback.
+
+### Work at risk on the old instance: none of substance
+
+Every home directory was checked on 2026-08-26. Accounts are
+`jwbowers`, `mlopez`, `drgarjardo`, plus `ubuntu`. No unpushed
+commits and no stashes anywhere. The only uncommitted changes are
+four regenerated CSVs in `/home/jwbowers/repos/fully_specified_bf`
+(`replications/*/sensitivity_axes.csv`, modified 2026-05-04), and
+they differ only in the last digit or two of floating-point values --
+for example `3.426868736` against `3.42686873600001`. An untracked
+`.claude/settings.local.json` sits alongside them. The diff is saved
+outside the repo in case it is ever wanted.
+
+Note the irony: that last-digit drift is itself the environment
+divergence showing up in output.
+
+**Check git as the owning user, or with `safe.directory` set.**
+`prism workspace exec` runs as root over SSM, so plain `git -C` calls
+against a user-owned repo fail the dubious-ownership guard. With
+stderr discarded they return empty strings, which read as "clean
+working tree, nothing unpushed" -- a false all-clear on exactly the
+question that gates terminating an instance. Set
+`GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory
+GIT_CONFIG_VALUE_0='*'` and let stderr through.
+
 ## Pending work
 
-1. **Relaunch bristol-workspace from the refreshed template, with
-   `--hibernation`.** The current instance (launched 2026-03-18,
-   STOPPED, pre-dates R 4.6) has never run any of the version bumps.
-   Sequence: launch the new workspace alongside the old one, validate,
-   then terminate the old one. Before terminating: confirm
-   `check_activity.sh` shows it idle and every home directory's work
-   is pushed to GitHub (the deploy-key model means unpushed work dies
-   with the instance).
-2. **On relaunch, redo what the relaunch destroys**: the security
-   group is recreated per launch, so the open-to-all edit on port
-   8787 must be reapplied; if the new workspace name differs from
-   `bristol-workspace`, the 5 AM cron and `start_bristol.sh` need the
-   new name.
-3. **Watch the first launch for slow R package installs.** The April
-   worry was PPM noble not yet indexing R 4.6 binaries. Four months
-   on, that is likely resolved, but if installs run slow it is
-   compilation from source, not a failure.
+1. **Register the new deploy key on GitHub.** The new instance
+   generated its own ed25519 key in `/etc/prism/`. Until that public
+   key is added to the deploy keys of
+   `bowers-illinois-edu/fully_specified_bf`, no account on the new
+   instance can clone or push. Only Jake can do this.
+2. **Recreate the collaborator accounts** on the new instance:
+   `sudo add-collaborator mlopez ...` and
+   `sudo add-collaborator drgarjardo ...`, then send each person
+   their new password. Account names should match the old instance so
+   paths in their notes still read correctly.
+3. **Reopen port 8787.** The security group is created fresh per
+   launch, so the manual open-to-all edit does not carry over.
+4. **Decide the name question.** The new workspace is
+   `bristol-workspace-2` because the old one still holds
+   `bristol-workspace`. Either keep the suffixed name and update
+   `start_bristol.sh` and the cron line, or terminate the old
+   instance and relaunch under the original name.
+5. **Terminate the old instance** once collaborators have moved. This
+   is the only destructive step and nothing above depends on it. The
+   work-at-risk check above is already done.
+6. **The 5 AM cron is currently commented out** in `crontab -l`, and
+   the last entry in `start_bristol.log` is 2026-06-29. Separately,
+   `start_bristol.sh` had its Slack webhook redacted in commit
+   `098c0c5` (2026-04-20), so `SLACK_WEBHOOK` is now the bare
+   `https://hooks.slack.com/services/` and any post would fail. Both
+   need attention before auto-start and its Slack notice work again.
+   Keep the real webhook out of the repo.
 
 ## Durable design rationale (carry forward indefinitely)
 
