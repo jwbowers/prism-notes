@@ -205,8 +205,15 @@ first.
    `sudo add-collaborator drgarjardo ...`, then send each person
    their new password. Account names should match the old instance so
    paths in their notes still read correctly.
-5. **Reopen port 8787.** The security group is created fresh per
-   launch, so the manual open-to-all edit does not carry over.
+5. ~~Reopen port 8787.~~ **Already done, and the belief behind this
+   item was wrong.** The security group is *not* recreated per
+   launch: `bristol-workspace-2` was placed in the same
+   `sg-0f316041b4b0cab8a` ("prism-access") as the old instance,
+   which already carries 8787 open to `0.0.0.0/0`. So RStudio on the
+   new instance is reachable with no security-group work. Port 8888
+   (Jupyter) remains restricted to `142.204.67.0/24`, and port 22 is
+   open to the world. Because the group is shared, editing it affects
+   both instances at once.
 6. **Decide the name question.** The new workspace is
    `bristol-workspace-2` because the old one still holds
    `bristol-workspace`. Either keep the suffixed name and update
@@ -290,8 +297,11 @@ choices. Keep them in mind when editing the YAML.
 - **No CLI option for additional CIDRs at launch.** Prism does not yet
   support opening ports to arbitrary IP ranges.
 - **Port 8888 (Jupyter)** still restricted to `142.204.67.0/24`.
-- **Security group is recreated per launch.** The manual open-to-all
-  edit on 8787 will be lost on relaunch.
+- **Security groups are reused across launches, not recreated.**
+  Corrected 2026-08-26: the 2026-08-26 launch reused
+  `sg-0f316041b4b0cab8a`, so the manual open-to-all edit on 8787
+  survived and needed no repeating. The flip side is that both
+  instances share one group, so any rule change hits both.
 - **Guides do not document the security group workaround for Jupyter.**
   RStudio is documented; Jupyter is not.
 
