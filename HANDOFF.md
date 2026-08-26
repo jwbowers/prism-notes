@@ -100,10 +100,21 @@ template, alongside the old instance rather than replacing it.
 | launched | 2026-03-18 | 2026-08-26 |
 | type | m7i.xlarge | m7i.xlarge (`--size L`) |
 | hibernation | no | **yes** |
-| R | 4.5.3 | 4.6.x from the CRAN PPA |
-| Quarto | 1.6.33 | 1.10.18 |
-| RStudio Server | 2026.01.1+403 | 2026.08.1-195 |
-| renv | 1.1.8 | 1.2.3 (chosen for laptop parity) |
+| R | 4.5.3 | **4.6.1** |
+| Quarto | 1.6.33 | **1.10.18** |
+| RStudio Server | 2026.01.1+403 | **2026.08.1+195** |
+| renv | 1.1.8 | **1.2.3** (pinned for laptop parity) |
+| languageserver | not checked | **0.3.18** |
+| Neovim | not checked | **0.12.5** |
+
+Both columns are measured, not inferred. The new instance matches
+Jake's laptop exactly on R, Quarto, and renv, which was the point of
+the exercise. RStudio Server is active with port 8787 listening,
+`library(tidyverse)` loads, and 181 packages sit in the site library.
+
+Pinning renv to 1.2.3 rather than accepting "latest" exercised the
+`remotes::install_version` branch of the template, which had never
+run before. It works.
 
 The old instance was measured, not guessed: it was started briefly on
 2026-08-26 to read these versions and then stopped again. The
@@ -127,8 +138,8 @@ for example `3.426868736` against `3.42686873600001`. An untracked
 `.claude/settings.local.json` sits alongside them. The diff is saved
 outside the repo in case it is ever wanted.
 
-Note the irony: that last-digit drift is itself the environment
-divergence showing up in output.
+That last-digit drift is the environment divergence showing up in
+output.
 
 **Check git as the owning user, or with `safe.directory` set.**
 `prism workspace exec` runs as root over SSM, so plain `git -C` calls
@@ -139,13 +150,44 @@ question that gates terminating an instance. Set
 `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory
 GIT_CONFIG_VALUE_0='*'` and let stderr through.
 
+### Posit Package Manager served sources, not binaries
+
+The standing question is answered, and not the way the April note
+guessed: on the 2026-08-26 launch every R package compiled from
+source under R 4.6.1. Cloud-init ran about 50 minutes instead of the
+usual few. Nothing broke, but two consequences matter.
+
+First, the slow launch is expected until PPM indexes noble binaries
+for R 4.6. Second, source builds need C headers that binaries never
+did, which is how the `RPostgres` and `RMySQL` failures surfaced. The
+template now installs `libpq-dev` and `libmysqlclient-dev` (commit
+`c08aa7f`), and both packages were installed by hand on the running
+instance, so `bristol-workspace-2` already matches the fixed
+template. A future launch needs no manual step.
+
+If a later launch is fast and the database packages arrive as
+binaries, PPM has caught up and the two `-dev` packages become
+harmless insurance. Keep them.
+
+**Installing R packages one at a time over `prism workspace exec`
+invites a lock collision.** `install.packages` takes a lock on
+`/usr/local/lib/R/site-library`, and a second call while the first
+still runs dies with `failed to lock directory`, leaving a stale
+`00LOCK-<pkg>` that fails every retry until it is deleted. Both
+RMySQL failures were this, not a missing header. Install in one call,
+and if a retry fails, `rm -rf /usr/local/lib/R/site-library/00LOCK-*`
+first.
+
 ## Pending work
 
 1. **Register the new deploy key on GitHub.** The new instance
-   generated its own ed25519 key in `/etc/prism/`. Until that public
-   key is added to the deploy keys of
-   `bowers-illinois-edu/fully_specified_bf`, no account on the new
-   instance can clone or push. Only Jake can do this.
+   generated its own ed25519 key. Until the public key is added to
+   the deploy keys of `bowers-illinois-edu/fully_specified_bf`, no
+   account on the new instance can clone or push, and the auto-clone
+   at launch had nothing to authenticate with. Only Jake can grant
+   this. The key is:
+
+       ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ3z7fwZV5dxi2xz1sA3/VEygRuphrMbBEfZuOOjmxnC prism-ip-172-31-7-125-deploy-key
 2. **Recreate the collaborator accounts** on the new instance:
    `sudo add-collaborator mlopez ...` and
    `sudo add-collaborator drgarjardo ...`, then send each person
@@ -188,10 +230,22 @@ choices. Keep them in mind when editing the YAML.
 
 ## Open follow-ups to check next launch
 
-- **AstroNvim v6 + Neovim 0.12.2 codelens.** AstroNvim v6.0.2 disabled
-  codelens by default due to a Neovim 0.12.1 issue. Neovim 0.12.2 is
-  now current and the template installs `latest`. Confirm nothing
-  regresses.
+- **AstroNvim v6 + Neovim codelens.** AstroNvim v6.0.2 disabled
+  codelens by default due to a Neovim 0.12.1 issue. The 2026-08-26
+  launch installed Neovim 0.12.5 and AstroNvim set up cleanly, but
+  nobody has opened an R file in it yet, so whether codelens is back
+  on is still unconfirmed.
+- **`spored` failed to install** on the 2026-08-26 launch: the log
+  shows `spored download failed` and `spored install failed`, though
+  the systemd unit was still linked. `spored` is Prism's idle-activity
+  daemon, so this may be one more reason idle detection never fires.
+  Worth a look if idle shutdown is ever wanted.
+- **`cloud-init status` never reached `done`** on the new instance. It
+  still reported `running` with `errors: []` and a 1970 timestamp long
+  after the setup script had finished and every service was up. The
+  environment validates, so this looks like stuck status bookkeeping
+  rather than unfinished work -- possibly the `spored` failure above.
+  Do not wait on `cloud-init status`; check the services instead.
 - **noble-native RStudio Server debs.** Worth checking quarterly. If
   Posit publishes them, switch the URL to `noble/` for cleaner
   install -- no functional benefit, the jammy path works.
@@ -234,9 +288,13 @@ choices. Keep them in mind when editing the YAML.
 - User is Jake Bowers, political science faculty at UIUC, applied
   statistician. Collaborators are in Chile (earlier time zone, hence
   the 5 AM auto-start cron).
-- Current workspace: "bristol-workspace" on `m7i.xlarge` in
-  `us-east-2`. Does NOT support hibernation (launched without
-  `--hibernation`).
+- Two workspaces exist as of 2026-08-26, both `m7i.xlarge` in
+  `us-east-2` with 80 GB gp3 root volumes, and both STOPPED.
+  "bristol-workspace" is the old one, without hibernation.
+  "bristol-workspace-2" is the new one, with hibernation, and is the
+  one to move to. Storage is the only cost while they sit stopped.
+  Note that `--size L` advertises "+2TB" but the template's
+  `root_volume_gb: 80` wins, so the volume is 80 GB either way.
 - Security group `sg-0f316041b4b0cab8a` ("prism-access") has port
   8787 manually opened to `0.0.0.0/0`.
 - The "research" idle policy is active but effectively non-functional

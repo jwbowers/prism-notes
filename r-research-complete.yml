@@ -205,7 +205,7 @@ packages:
     - "libgit2-dev"
 
   # LaTeX and document tools
-  # NOTE: texlive-full replaced with curated subset — the full meta-package
+  # NOTE: texlive-full replaced with curated subset -- the full meta-package
   # downloads ~5 GB / ~4500 debs and routinely hits 503/timeouts on EC2
   # regional mirrors. This subset covers everything needed for academic
   # publishing with R/Quarto/biblatex/tikz/XeTeX plus Spanish language.
@@ -732,7 +732,7 @@ idle_detection:
 
 # Instance defaults
 instance_defaults:
-  type: "m7i.xlarge" # 4 vCPU, 16 GB RAM — good for 2-3 concurrent RStudio users
+  type: "m7i.xlarge" # 4 vCPU, 16 GB RAM -- good for 2-3 concurrent RStudio users
   ports: [22, 8787, 8888]
   root_volume_gb: 80 # Larger for LaTeX, R packages, and Python libs
 
