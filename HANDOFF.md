@@ -3,15 +3,24 @@
 Rolling state of the repository. Per-session work logs are archived
 in `HANDOFF_HISTORY.md`.
 
-Last reorganized: 2026-05-19.
+Last reorganized: 2026-08-26.
 
-## Current uncommitted state
+## Current state
 
-- **`r-research-complete.yml`** -- has unstaged changes from the
-  2026-04-27 session bumping R / RStudio Server / Quarto /
-  languageserver / AstroNvim versions. See `HANDOFF_HISTORY.md` for
-  the per-line breakdown. Suggested commit message:
-  `Update R, RStudio Server, and Quarto to latest stable releases`.
+- **`r-research-complete.yml`** -- refreshed 2026-08-26 to current
+  releases: R comment 4.6.1 (2026-06-24), RStudio Server
+  2026.08.1-195 (jammy deb URL verified reachable, HTTP 200), Quarto
+  1.10.18 (GitHub release asset verified to exist), languageserver
+  0.3.18 and renv 1.2.4 added to choice lists (older entries kept).
+  Template `version:` field bumped 1.0.0 -> 1.1.0. The earlier
+  April bump was committed in `407b660` (2026-04-27); a prior note
+  here claiming it was uncommitted was stale.
+- **Versioning convention for the template**: the filename, `name`,
+  and `slug` never change (users symlink `r-research-complete.yml`
+  into `~/.prism/`, and the guides reference it by name). The
+  `version:` field carries the template version: bump the minor
+  number when installed software changes, the patch number for
+  comment or documentation edits. Git history holds the details.
 - **`start_bristol.log`** -- untracked log file, gitignored.
 
 `check_activity.sh` was added in commit `c0ae87a` (2026-05-19): a
@@ -21,20 +30,23 @@ average) via `prism workspace exec`. See the file header for usage.
 
 ## Pending work
 
-1. **Commit and push the version-bump changes** in
-   `r-research-complete.yml`. Diff also contains pre-existing
-   whitespace-only YAML reformatting from earlier sessions (multi-line
-   `choices:` arrays, comment alignment) that was never committed; that
-   noise is mixed in.
-2. **Test the version-bump changes on a live launch.** None of them
-   have been exercised end-to-end. Specifically:
-   - PPM noble may not have R 4.6 binaries indexed yet. If R packages
-     start compiling from source instead of installing as binaries,
-     that is the cause -- the install will still succeed, just slower.
-   - RStudio Server 2026.04.0-526 jammy deb on noble: URL verified
-     reachable, not yet booted.
-   - Quarto 1.9.37 deb: URL pattern is stable but not explicitly
-     verified.
+1. **Relaunch bristol-workspace from the refreshed template, with
+   `--hibernation`.** The current instance (launched 2026-03-18,
+   STOPPED, pre-dates R 4.6) has never run any of the version bumps.
+   Sequence: launch the new workspace alongside the old one, validate,
+   then terminate the old one. Before terminating: confirm
+   `check_activity.sh` shows it idle and every home directory's work
+   is pushed to GitHub (the deploy-key model means unpushed work dies
+   with the instance).
+2. **On relaunch, redo what the relaunch destroys**: the security
+   group is recreated per launch, so the open-to-all edit on port
+   8787 must be reapplied; if the new workspace name differs from
+   `bristol-workspace`, the 5 AM cron and `start_bristol.sh` need the
+   new name.
+3. **Watch the first launch for slow R package installs.** The April
+   worry was PPM noble not yet indexing R 4.6 binaries. Four months
+   on, that is likely resolved, but if installs run slow it is
+   compilation from source, not a failure.
 
 ## Durable design rationale (carry forward indefinitely)
 
@@ -55,10 +67,6 @@ choices. Keep them in mind when editing the YAML.
 
 ## Open follow-ups to check next launch
 
-- **PPM R 4.6 binary index lag.** If the next workspace launch shows
-  slow R package compilation, check whether
-  `packagemanager.posit.co/cran/__linux__/noble/latest` has indexed
-  R 4.6 binaries yet. Usually catches up within days of an R release.
 - **AstroNvim v6 + Neovim 0.12.2 codelens.** AstroNvim v6.0.2 disabled
   codelens by default due to a Neovim 0.12.1 issue. Neovim 0.12.2 is
   now current and the template installs `latest`. Confirm nothing
@@ -89,8 +97,6 @@ choices. Keep them in mind when editing the YAML.
 
 ## Infrastructure issues (carry-forward)
 
-- **Relaunch bristol-workspace with `--hibernation`.** Current instance
-  was launched without it.
 - **Silent hibernate fallback is a UX problem in Prism itself.**
   Feature request candidate: warn or refuse instead of silently falling
   back to stop.
@@ -124,6 +130,7 @@ choices. Keep them in mind when editing the YAML.
   dashes, smart quotes, ellipses, etc.) in all files.
 - AstroNvim upstream template moved to v6 on 2026-03-30. The `main`
   branch of `github.com/AstroNvim/template` is now v6.
-- Version pins as of last edit: R 4.6.0 (released 2026-04-24), RStudio
-  Server 2026.04.0+526 (released 2026-04-18), Quarto 1.9.37, Neovim
-  0.12.2.
+- Version pins as of last edit (2026-08-26): R 4.6.1 (released
+  2026-06-24), RStudio Server 2026.08.1-195, Quarto 1.10.18,
+  languageserver 0.3.18, renv 1.2.4 on CRAN. Jake's laptop runs
+  R 4.6.1, renv 1.2.3, Quarto 1.10.18, so a fresh launch matches it.

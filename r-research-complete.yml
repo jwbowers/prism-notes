@@ -6,10 +6,10 @@ long_description: |
   r-research-full-stack and r-publishing-stack into a single template.
 
   Includes:
-  - R 4.6.0 with tidyverse and extended data wrangling packages
-  - RStudio Server 2026.04 (web-based IDE on port 8787)
+  - R 4.6.1 with tidyverse and extended data wrangling packages
+  - RStudio Server 2026.08 (web-based IDE on port 8787)
   - Neovim with AstroNvim, R.nvim, treesitter, and LSP support
-  - Quarto 1.9 for scientific publishing
+  - Quarto 1.10 for scientific publishing
   - Full TeX Live 2024 for PDF generation
   - Publishing packages: bookdown, blogdown, xaringan, gt, gtsummary
   - Python 3.12 with Jupyter Lab
@@ -25,7 +25,7 @@ long_description: |
   - Teaching data science
 
 author: "Prism Team"
-version: "1.0.0"
+version: "1.1.0"
 base: "ubuntu-24.04"
 
 # Connection type
@@ -61,6 +61,7 @@ parameters:
     choices:
       [
         "latest",
+        "2026.08.1-195",
         "2026.04.0-526",
         "2026.01.2-418",
         "2026.01.1-403",
@@ -146,7 +147,7 @@ parameters:
     display_name: "Language Server Version"
     description: "Version of languageserver package"
     type: "choice"
-    choices: ["latest", "0.3.17", "0.3.16", "0.3.15"]
+    choices: ["latest", "0.3.18", "0.3.17", "0.3.16", "0.3.15"]
     default: "latest"
     group: "R Packages"
     order: 11
@@ -166,7 +167,7 @@ parameters:
     display_name: "renv Version"
     description: "Version of renv package"
     type: "choice"
-    choices: ["latest", "1.2.2", "1.2.0"]
+    choices: ["latest", "1.2.4", "1.2.3", "1.2.2", "1.2.0"]
     default: "latest"
     group: "R Packages"
     order: 21
@@ -333,7 +334,7 @@ post_install: |
   echo "Updating system packages..."
   apt-get update && apt-get upgrade -y
 
-  # Install R (latest stable from CRAN PPA; 4.6.0 as of 2026-04-24)
+  # Install R (latest stable from CRAN PPA; 4.6.1 as of 2026-06-24)
   echo "Installing R from CRAN..."
   wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
   add-apt-repository -y "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
@@ -348,9 +349,9 @@ post_install: |
   echo "Installing RStudio Server..."
   apt-get install -y gdebi-core
   if [ "{{.rstudio_version}}" = "latest" ]; then
-    # Use latest available version (2026.04.0-526 as of April 2026)
+    # Use latest available version (2026.08.1-195 as of August 2026)
     # Posit provides jammy (Ubuntu 22.04) debs for Ubuntu 24.04 via glibc compatibility
-    RSTUDIO_VERSION="2026.04.0-526"
+    RSTUDIO_VERSION="2026.08.1-195"
   else
     RSTUDIO_VERSION="{{.rstudio_version}}"
   fi
@@ -363,11 +364,11 @@ post_install: |
   systemctl start rstudio-server
   echo "RStudio Server installed and started (port 8787)"
 
-  # Install Quarto 1.9.37
+  # Install Quarto 1.10.18
   echo "Installing Quarto..."
-  wget https://github.com/quarto-dev/quarto-cli/releases/download/v1.9.37/quarto-1.9.37-linux-amd64.deb
-  apt-get install -y ./quarto-1.9.37-linux-amd64.deb
-  rm quarto-1.9.37-linux-amd64.deb
+  wget https://github.com/quarto-dev/quarto-cli/releases/download/v1.10.18/quarto-1.10.18-linux-amd64.deb
+  apt-get install -y ./quarto-1.10.18-linux-amd64.deb
+  rm quarto-1.10.18-linux-amd64.deb
   echo "Quarto installed"
 
   # Install R packages using Posit Package Manager (pre-built binaries for Ubuntu 24.04)
@@ -736,11 +737,11 @@ research_users:
 
 # Component versions (for reference)
 components:
-  r_version: "4.6.0"
-  rstudio_server_version: "2026.04.0-526"
+  r_version: "4.6.1"
+  rstudio_server_version: "2026.08.1-195"
   neovim_version: "latest-stable"
   astronvim_version: "v6"
-  quarto_version: "1.9.37"
+  quarto_version: "1.10.18"
   python_version: "3.12"
   texlive_version: "2024"
 
