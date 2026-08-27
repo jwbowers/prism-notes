@@ -5,23 +5,54 @@ in `HANDOFF_HISTORY.md`.
 
 Last reorganized: 2026-08-26.
 
+## Start here
+
+The working tree is clean apart from four untracked files, and both
+EC2 instances are stopped. Nothing is half-finished.
+
+The 2026-08-26 session refreshed the template and cut over to a new
+instance, `bristol-workspace-2`, which is ready for collaborators.
+What remains is three decisions for Jake, listed under "Pending work"
+below. No code or configuration is waiting to be written.
+
+Before trusting any claim in this file, check it. The 2026-08-26
+session found that a previous version of this file asserted
+uncommitted template changes that had in fact been committed four
+months earlier, and separately asserted that the security group is
+recreated on every launch when it is reused. Both cost time. Run
+`git status`, and confirm anything about AWS against
+`aws ec2 describe-instances` rather than against Prism's output.
+
 ## Current state
 
 - **`r-research-complete.yml`** -- refreshed 2026-08-26 to current
   releases: R comment 4.6.1 (2026-06-24), RStudio Server
   2026.08.1-195 (jammy deb URL verified reachable, HTTP 200), Quarto
   1.10.18 (GitHub release asset verified to exist), languageserver
-  0.3.18 and renv 1.2.4 added to choice lists (older entries kept).
-  Template `version:` field bumped 1.0.0 -> 1.1.0. The earlier
-  April bump was committed in `407b660` (2026-04-27); a prior note
-  here claiming it was uncommitted was stale.
+  0.3.18 and renv 1.2.4/1.2.3 added to choice lists (older entries
+  kept), and `libpq-dev` plus `libmysqlclient-dev` added so the
+  database packages build from source. Template `version:` field is
+  now **1.2.0** (1.0.0 -> 1.1.0 for the version refresh, -> 1.2.0 for
+  the added packages). The earlier April bump was committed in
+  `407b660` (2026-04-27); a prior note here claiming it was
+  uncommitted was stale.
+- **`start_bristol.sh`** -- targets `bristol-workspace-2`. Both
+  `WORKSPACE` and `SLACK_WEBHOOK` read from the environment first, so
+  neither needs a file edit to change. The webhook in the file is a
+  dead placeholder by design; see pending item 3.
 - **Versioning convention for the template**: the filename, `name`,
   and `slug` never change (users symlink `r-research-complete.yml`
-  into `~/.prism/`, and the guides reference it by name). The
-  `version:` field carries the template version: bump the minor
+  into `~/.prism/templates/`, and the guides reference it by name).
+  The `version:` field carries the template version: bump the minor
   number when installed software changes, the patch number for
   comment or documentation edits. Git history holds the details.
-- **`start_bristol.log`** -- untracked log file, gitignored.
+- **Four untracked files**, none of them accidental leftovers:
+  `start_bristol.log` is a run log (note that `.gitignore` does *not*
+  cover it, contrary to an earlier note here, so it shows up in every
+  `git status`). `INSTANCE_SIZING.md`, `ipad-termius-setup.md`, and
+  `remote-prismd-host-setup.md` are finished documents that have
+  simply never been committed. Committing them, or adding the log to
+  `.gitignore`, is an open question nobody has decided.
 
 ### Template discovery was broken; fixed 2026-08-26
 
@@ -300,8 +331,13 @@ choices. Keep them in mind when editing the YAML.
 
 - **The Mac running the cron must stay plugged in and not shut down.**
   No monitoring for missed starts.
-- **The public IP may change on each start.** Collaborators check Slack
-  each morning (the `start_bristol.sh` script posts it).
+- **The public IP changes on each start**, and as of 2026-08-26
+  nothing announces it. The Slack notice in `start_bristol.sh` has
+  been posting to a dead URL since the webhook was stripped on
+  2026-04-20, and the cron that would run it is commented out, so
+  collaborators currently have no automatic way to learn the address.
+  Someone has to send it by hand each session until pending item 3 is
+  settled.
 - **Shutdown is purely manual.** No scheduled stop, no reminder.
 - **Idle detection is architecturally broken for persistent web
   services.** RStudio Server's background traffic exceeds the
@@ -344,14 +380,27 @@ choices. Keep them in mind when editing the YAML.
   one to move to. Storage is the only cost while they sit stopped.
   Note that `--size L` advertises "+2TB" but the template's
   `root_volume_gb: 80` wins, so the volume is 80 GB either way.
-- Security group `sg-0f316041b4b0cab8a` ("prism-access") has port
-  8787 manually opened to `0.0.0.0/0`.
+- Security group `sg-0f316041b4b0cab8a` ("prism-access") is shared by
+  both instances and has port 8787 open to `0.0.0.0/0`, port 22 open
+  to `0.0.0.0/0`, and ports 80, 443, and 8888 limited to
+  `142.204.67.0/24`.
 - The "research" idle policy is active but effectively non-functional
   due to RStudio Server background traffic.
-- `start_bristol.sh` contains a Slack webhook URL -- do not commit
-  this to a public repo without redacting it.
+- **`start_bristol.sh` no longer contains a real Slack webhook.** It
+  was stripped in `098c0c5` (2026-04-20) and the script now reads
+  `SLACK_WEBHOOK` from the environment. Keep the real value in the
+  environment and out of the repository.
+- The project served by these workspaces is
+  `bowers-illinois-edu/fully_specified_bf`, checked out locally at
+  `~/repos/fully_specified_bf`. Collaborators are Matias Lopez
+  (`mlopez`) and Daniel Gajardo (`drgarjardo` on the instances,
+  `drgajardo` in git). Daniel committed on 2026-08-22, so the project
+  is active, not dormant.
 - Prism source is at `~/src/prism`. Claude has read permissions via
-  `.claude/settings.local.json`.
+  `.claude/settings.local.json`. **Two things break if that checkout
+  goes away**: the base-template symlink that makes the template
+  loadable at all, and `/opt/homebrew/bin/prismd`, which is itself a
+  symlink into `~/src/prism/bin/`.
 - Persistent memory includes: Prism source location, web-based
   start/stop feature idea.
 - Jake's global CLAUDE.md requires ASCII-only text (no unicode em
@@ -364,3 +413,15 @@ choices. Keep them in mind when editing the YAML.
   R 4.6.1, renv 1.2.3, Quarto 1.10.18, so a fresh launch matches it
   on R and Quarto; renv defaults to "latest" (1.2.4), or pick 1.2.3
   from the choices list at launch for exact laptop parity.
+- **The original question behind all of this**, worth restating
+  because it is easy to lose in the operational detail: Jake's laptop
+  had drifted away from the instance, and he asked how to close the
+  gap. The answer has two halves. System software (R, Quarto, RStudio
+  Server) is what the template controls, and a relaunch replaces it.
+  Per-project package versions are what `renv.lock` controls, and
+  they travel through git: `renv::snapshot()` on the laptop,
+  `renv::restore()` on the instance, with renv bootstrapping the
+  version the lockfile names. The second half is what makes analyses
+  agree across machines, and it works regardless of the instance's
+  own R version. Recommend the lockfile first when this comes up
+  again; the instance version is the slower, separate concern.
